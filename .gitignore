@@ -17,3 +17,8 @@ backend/data/
 data/mlflow.db
 data/mlruns/
 loan_data.xlsx
+idea/
+techdebt-report/
+.codeanalysis-ignore.json
+navigate.png
+sample view.webp
