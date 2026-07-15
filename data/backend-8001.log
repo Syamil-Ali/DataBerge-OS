@@ -1,0 +1,12 @@
+INFO:     127.0.0.1:59437 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54727 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54728 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54729 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54730 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54731 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/relational-schemas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54732 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/relational-schemas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63762 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53878 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65312 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/chat-sessions?dataset_id=2d9b65a0786d4778a1a33279095ed8db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57912 - "GET /api/projects/29bf2345c300427c8ad6338912357bd0/chat-sessions?dataset_id=2d9b65a0786d4778a1a33279095ed8db HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54560 - "GET /api/health HTTP/1.1" 200 OK

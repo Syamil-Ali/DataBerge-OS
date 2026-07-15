@@ -1,0 +1,234 @@
+
+> data-berge-os-frontend@0.1.0 dev
+> vite --host 0.0.0.0 --host 0.0.0.0 --port 5173
+
+
+  [32m[1mVITE[22m v6.4.3[39m  [2mready in [0m[1m480[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://10.214.160.120:[1m5173[22m/[39m
+  [32m➜[39m  [1mNetwork[22m: [36mhttp://172.29.96.1:[1m5173[22m/[39m
+INFO:     127.0.0.1:52904 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52911 - "POST /api/projects/850e4ec070a6472b9241eee2c8f00042/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52914 - "POST /api/projects/850e4ec070a6472b9241eee2c8f00042/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52915 - "POST /api/projects/850e4ec070a6472b9241eee2c8f00042/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52598 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52599 - "GET /api/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52600 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57634 - "GET /api/projects HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55644 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/relational-schemas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55645 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/relational-schemas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63355 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63356 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55157 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/relational-schemas/931437c44c1b443ca6928b3d99080baf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54256 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/relational-schemas/931437c44c1b443ca6928b3d99080baf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59140 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/chat-sessions?dataset_id=931437c44c1b443ca6928b3d99080baf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63972 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/chat-sessions?dataset_id=931437c44c1b443ca6928b3d99080baf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52733 - "POST /api/projects/34c9c6205cc3438bbaee3accdeb7b341/chat-sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51383 - "GET /api/projects/34c9c6205cc3438bbaee3accdeb7b341/chat-sessions?dataset_id=931437c44c1b443ca6928b3d99080baf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55275 - "POST /api/projects/34c9c6205cc3438bbaee3accdeb7b341/chat HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54968 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:59964 - "HEAD /queue HTTP/1.1" 404 Not Found
+Terminate batch job (Y/N)? 
+[start] backend: C:\Users\hasmi\Desktop\Data-Berge-OS\backend\.venv\Scripts\python.exe run.py
+[start] frontend: npm.cmd run dev -- --host 0.0.0.0 --port 5173
+
+Data-Berge OS is starting up:
+- Backend:  http://127.0.0.1:8000
+- Frontend: http://127.0.0.1:5173
+- MLflow:   skipped (use --with-mlflow to enable tracking)
+
+Press Ctrl+C once to stop everything.
+[stop] frontend

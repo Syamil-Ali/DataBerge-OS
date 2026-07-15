@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Berge OS — Documentation</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #161922;
+    --surface-2: #1c1f2b;
+    --border: #2a2e3d;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --accent: #22c7da;
+    --accent-2: #06b6d4;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --purple: #a78bfa;
+    --blue: #60a5fa;
+    --pink: #f472b6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0c1220 0%, #1a1040 50%, #0d2030 100%);
+    padding: 80px 40px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--blue), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .hero p { color: var(--text-muted); font-size: 1.15rem; max-width: 600px; margin: 0 auto; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  /* Navigation */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  nav.toc a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-right: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+  }
+  nav.toc a:hover { color: var(--accent); }
+
+  /* Sections */
+  .section { margin-bottom: 64px; }
+  .section h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section h2 .badge {
+    font-size: 0.7rem;
+    background: var(--accent);
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .section h3 {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 28px 0 12px;
+  }
+  .section p, .section li {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+  }
+  .section ul, .section ol { padding-left: 24px; }
+  .section li { margin-bottom: 6px; }
+  .section li strong { color: var(--text); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p { font-size: 0.88rem; color: var(--text-muted); margin: 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-cyan { background: var(--accent); }
+  .dot-green { background: var(--green); }
+  .dot-amber { background: var(--amber); }
+  .dot-red { background: var(--red); }
+  .dot-blue { background: var(--blue); }
+  .dot-purple { background: var(--purple); }
+  .dot-pink { background: var(--pink); }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+  }
+  :not(pre) > code {
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.88rem;
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--surface);
+  }
+  td { color: var(--text-muted); }
+  tr:hover td { background: rgba(34,199,218,0.04); }
+
+  /* Flow diagrams */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .flow-step .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .flow-step .desc {
+    font-size: 0.82rem;
+    color: var(--text);
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .flow-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text-muted);
+  }
+
+  /* Info boxes */
+  .info-box {
+    background: rgba(34,199,218,0.08);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+  }
+  .info-box.warning {
+    background: rgba(251,191,36,0.08);
+    border-left-color: var(--amber);
+  }
+  .info-box p { margin: 0; }
+
+  /* Pipeline */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    margin: 20px 0;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .pipeline-step {
+    background: var(--surface);
+    padding: 18px 14px;
+    text-align: center;
+    position: relative;
+  }
+  .pipeline-step .num {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent);
+    opacity: 0.3;
+  }
+  .pipeline-step .name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-top: 4px;
+  }
+  .pipeline-step .detail {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 2rem; }
+    .hero { padding: 48px 20px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Data Berge OS</h1>
+  <p>A full-stack AI-powered data analytics platform for profiling, exploring, and reporting on structured datasets — with multi-table relational schema support and agentic AI workflows.</p>
+</div>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#backend">Backend</a>
+  <a href="#workflow">Workflow</a>
+  <a href="#agents">AI Agents</a>
+  <a href="#features">Features</a>
+  <a href="#database">Database</a>
+  <a href="#config">Configuration</a>
+  <a href="#api">API Reference</a>
+</nav>
+
+<div class="container">
+
+<!-- ===== OVERVIEW ===== -->
+<div class="section" id="overview">
+  <h2>1. Overview <span class="badge">Introduction</span></h2>
+  <p>Data Berge OS is a self-contained analytics workspace that lets users upload structured data (CSV, Excel), automatically profile it, explore it through natural language chat powered by AI agents, and generate executive-level reports — all within a single application.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4><span class="dot dot-cyan"></span> Data Pulse</h4>
+      <p>Automated dataset profiling with per-column statistics, distributions, quality flags, bivariate analysis, and data engineering readiness scoring.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-green"></span> Explorer</h4>
+      <p>Natural language chat interface with AI agents that generate SQL queries, charts, and insights against your data. Multi-session, multi-turn conversations.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-purple"></span> Executive Report</h4>
+      <p>Automated five-step report pipeline: readiness assessment, data investigation, narrative generation, governance review, and approval workflow.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-amber"></span> Relational Schema</h4>
+      <p>Multi-table Excel upload with automatic relationship inference, data dictionary mapping, and joined working dataset materialization.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-blue"></span> OpenDOSM</h4>
+      <p>Built-in connector to Malaysia's Open Data portal — browse and connect official datasets (CPI, population, demographics) with automatic schema detection.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-pink"></span> AI Agents</h4>
+      <p>Four-agent system with a model-led Team Manager, Data Analyst, Data Engineer, and Report Agent backed by bounded analytics tools and persistent memory.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARCHITECTURE ===== -->
+<div class="section" id="architecture">
+  <h2>2. Architecture <span class="badge">System Design</span></h2>
+  <p>The application follows a three-tier architecture with clear separation of concerns between product logic and reusable analytics primitives.</p>
+
+  <div class="arch-diagram">
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          BROWSER  (React 19 + Vite)                     │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐    │
+│  │  Landing  │  │  Data    │  │ Explorer │  │  Executive Report    │    │
+│  │   Page    │  │  Pulse   │  │  (Chat)  │  │  (SBAR Pipeline)     │    │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────────┬───────────┘    │
+│       │              │              │                   │                │
+│       └──────────────┴──────────────┴───────────────────┘                │
+│                           fetch('/api/*')                                │
+└─────────────────────────────────┬───────────────────────────────────────┘
+                                  │  JWT Bearer
+┌─────────────────────────────────┴───────────────────────────────────────┐
+│                     FASTAPI BACKEND  (Python 3.11+)                     │
+│                                                                         │
+│  ┌─── API Layer (app/) ─────────────────────────────────────────────┐  │
+│  │ auth │ projects │ datasets │ chat │ reports │ artifacts │ opendosm│  │
+│  │ relational │ chat_sessions                                        │  │
+│  └──────────────────────┬───────────────────────────────────────────┘  │
+│                          │                                             │
+│  ┌─── Workflow Layer ───┼───────────────────────────────────────────┐  │
+│  │ upload_workflow │ chat_workflow │ report_workflow                 │  │
+│  └──────────────────────┬───────────────────────────────────────────┘  │
+│                          │                                             │
+│  ┌─── Core (data_berge_core/) ──────────────────────────────────────┐  │
+│  │ Skills: Intake │ Profiler │ Query │ Visualization │ Reporting     │  │
+│  │         │ Engineering │ Governance                                 │  │
+│  │ Agents: TeamManagerAgent │ DataAnalystAgent │ DataEngineerAgent   │  │
+│  │         │ ReportAgent                                               │  │
+│  │ Infra:  typed assignments │ AnalyticsToolkit │ AgentMemory        │  │
+│  └──────────────────────┬───────────────────────────────────────────┘  │
+│                          │                                             │
+│  ┌─── Services ─────────┼───────────────────────────────────────────┐  │
+│  │ profiling.py │ query_engine.py │ relational.py │ data_engineering │  │
+│  │ opendosm.py │ llm_observability.py                               │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌─── Storage ──────────────────────────────────────────────────────┐  │
+│  │  SQLite (app.db)  │  DuckDB (in-memory queries)  │  MLflow      │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘</div>
+
+  <h3>Key Separation of Concerns</h3>
+  <table>
+    <tr><th>Layer</th><th>Location</th><th>Responsibility</th></tr>
+    <tr><td><strong>Product API</strong></td><td><code>backend/app/</code></td><td>HTTP routes, auth, DB access, file management, response shaping</td></tr>
+    <tr><td><strong>Workflows</strong></td><td><code>backend/app/workflows/</code></td><td>Multi-step business logic (upload, chat, report generation)</td></tr>
+    <tr><td><strong>Core Analytics</strong></td><td><code>backend/data_berge_core/</code></td><td>Reusable analytics primitives, agent framework, skills, planning</td></tr>
+    <tr><td><strong>Services</strong></td><td><code>backend/app/services/</code></td><td>Data profiling, SQL execution, relational schema processing</td></tr>
+    <tr><td><strong>Frontend</strong></td><td><code>frontend/src/</code></td><td>React SPA with client-side routing, Recharts visualizations</td></tr>
+  </table>
+</div>
+
+<!-- ===== FRONTEND ===== -->
+<div class="section" id="frontend">
+  <h2>3. Frontend <span class="badge">React 19 + Vite</span></h2>
+
+  <h3>Technology Stack</h3>
+  <table>
+    <tr><th>Category</th><th>Technology</th><th>Purpose</th></tr>
+    <tr><td>Framework</td><td>React 19 + TypeScript</td><td>UI components, type safety</td></tr>
+    <tr><td>Bundler</td><td>Vite 6</td><td>Dev server, HMR, production builds</td></tr>
+    <tr><td>Styling</td><td>Tailwind CSS 4</td><td>Utility-first CSS via Vite plugin</td></tr>
+    <tr><td>Charts</td><td>Recharts 3</td><td>Bar, line, scatter, donut charts</td></tr>
+    <tr><td>Markdown</td><td>react-markdown + remark-gfm</td><td>Chat message rendering</td></tr>
+    <tr><td>Icons</td><td>lucide-react</td><td>Consistent icon system</td></tr>
+  </table>
+
+  <h3>Routing</h3>
+  <p>No router library — routes are managed via <code>window.history.pushState</code> and <code>popState</code> events in <code>App.tsx</code>.</p>
+  <table>
+    <tr><th>Route</th><th>Component</th><th>Description</th></tr>
+    <tr><td><code>main</code></td><td>LandingPage</td><td>Public marketing page with upload CTA</td></tr>
+    <tr><td><code>login</code></td><td>LoginPage</td><td>Authentication forms</td></tr>
+    <tr><td><code>signup</code></td><td>LoginPage</td><td>Registration form (same component, different mode)</td></tr>
+    <tr><td><code>upload</code></td><td>UploadView</td><td>File upload interface</td></tr>
+    <tr><td><code>workspace</code></td><td>WorkspaceView</td><td>Full workspace with sidebar + tab panels</td></tr>
+  </table>
+
+  <h3>Key Components</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4><span class="dot dot-cyan"></span> SchemaProfileView</h4>
+      <p>Renders per-table profiles for relational schemas — column explorer with mini charts, bivariate analysis, engineering summary, quality flags.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-green"></span> ChatExplorer</h4>
+      <p>Multi-session chat interface. Session management, inline chart rendering via ChartBlock, agent metadata badges, context attachments from Data Pulse.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-purple"></span> ReportBuilder</h4>
+      <p>Report configuration form (audience, goal, tone, focus areas) and results display with approve/reject workflow.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-amber"></span> RelationshipEditor</h4>
+      <p>Full-page relational schema review — detected tables, inferred relationships with confidence scores, data dictionary mapping, confirm/edit actions.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-blue"></span> ChartBlock</h4>
+      <p>Reusable Recharts wrapper rendering bar, donut, scatter, line, and table charts from ChartSpec objects.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-pink"></span> MetricCard</h4>
+      <p>Reusable KPI card with icon, label, value, and color tone — used in Data Pulse and reports.</p>
+    </div>
+  </div>
+
+  <h3>State Management</h3>
+  <p>All state is managed with React hooks (<code>useState</code>, <code>useEffect</code>, <code>useMemo</code>, <code>useRef</code>). No Redux or Zustand. The <code>AuthContext</code> provides authentication state (user, token, loading) via React Context across the app.</p>
+
+  <h3>API Service Layer</h3>
+  <p>A thin <code>fetch</code> wrapper in <code>services/api.ts</code> attaches JWT Bearer tokens from <code>localStorage</code>. Covers all backend endpoints: projects, datasets, chat, chat-sessions, reports, artifacts, OpenDOSM, relational schemas, and dictionary mapping.</p>
+</div>
+
+<!-- ===== BACKEND ===== -->
+<div class="section" id="backend">
+  <h2>4. Backend <span class="badge">FastAPI + Python</span></h2>
+
+  <h3>Core Dependencies</h3>
+  <table>
+    <tr><th>Package</th><th>Version</th><th>Purpose</th></tr>
+    <tr><td>FastAPI</td><td>0.115+</td><td>HTTP framework</td></tr>
+    <tr><td>Pandas</td><td>2.2+</td><td>DataFrames, data manipulation</td></tr>
+    <tr><td>Polars</td><td>1.18+</td><td>High-performance DataFrame operations</td></tr>
+    <tr><td>DuckDB</td><td>1.1+</td><td>In-memory analytical SQL engine</td></tr>
+    <tr><td>Agno</td><td>2.3+</td><td>Agent framework (optional, with deterministic fallback)</td></tr>
+    <tr><td>MLflow</td><td>3.0+</td><td>Observability, experiment tracking (optional)</td></tr>
+    <tr><td>python-jose</td><td>—</td><td>JWT token handling</td></tr>
+    <tr><td>bcrypt</td><td>—</td><td>Password hashing</td></tr>
+  </table>
+
+  <h3>Services</h3>
+
+  <div class="card">
+    <h4><span class="dot dot-cyan"></span> profiling.py <span style="color:var(--text-muted); font-weight:400; font-size:0.8rem;">(445 lines)</span></h4>
+    <p>The core profiler. Takes a DataFrame and produces a comprehensive profile with per-column statistics (mean, median, std, quartiles, histograms, top values, word frequencies), metadata about column types, quality flags (missing cells, duplicates, empty datasets), Pearson correlations, and full bivariate analysis (Pearson for numeric-numeric, chi-square for categorical-categorical, ANOVA for numeric-categorical). Uses Polars when available, falls back to Pandas. Optionally uses SciPy for statistical tests.</p>
+  </div>
+
+  <div class="card">
+    <h4><span class="dot dot-green"></span> query_engine.py</h4>
+    <p>Builds and executes safe SELECT-only DuckDB queries. The <code>build_sql</code> function uses keyword matching to translate natural language into SQL patterns (row count, missing values, aggregations, correlations, group-by, outcome comparisons). The <code>validate_select</code> function blocks non-SELECT statements. Queries run against an in-memory DuckDB instance with the dataset registered as the <code>dataset</code> table.</p>
+  </div>
+
+  <div class="card">
+    <h4><span class="dot dot-purple"></span> relational.py <span style="color:var(--text-muted); font-weight:400; font-size:0.8rem;">(714 lines)</span></h4>
+    <p>Multi-table ingestion engine. Loads multi-sheet Excel files (each sheet becomes a table), detects Data Dictionary sheets, infers foreign-key relationships via four methods: explicit PK/FK annotations, normalized column name matching, table-name FK patterns, and value coverage analysis. Builds per-table profiles and produces a unified relational schema.</p>
+  </div>
+
+  <div class="card">
+    <h4><span class="dot dot-amber"></span> data_engineering.py</h4>
+    <p>Infers engineering roles for each column (identifier, measure, category, outcome, narrative, time), detects null-like markers, identifies datetime candidates, and computes a readiness score (0-10) penalizing missing cells, duplicates, and undocumented columns.</p>
+  </div>
+
+  <div class="card">
+    <h4><span class="dot dot-blue"></span> opendosm.py</h4>
+    <p>Connector to Malaysia's OpenDOSM API. Fetches datasets (CPI, population, births, deaths, marriages, fertility, household profiles), scrapes metadata from the catalogue HTML, and builds relational schemas with automatic lookup table resolution from metadata field descriptions.</p>
+  </div>
+
+  <div class="card">
+    <h4><span class="dot dot-pink"></span> llm_observability.py</h4>
+    <p>Comprehensive MLflow integration. Logs profile runs, chat runs with full execution traces (agent mode, active skill, SQL executed, chart generated, plan steps, debate rounds, prompt templates, token usage, cost data).</p>
+  </div>
+</div>
+
+<!-- ===== WORKFLOW ===== -->
+<div class="section" id="workflow">
+  <h2>5. End-to-End Workflow <span class="badge">User Journey</span></h2>
+
+  <h3>Step 1 — Startup</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="label">Command</div><div class="desc">python run.py</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">MLflow</div><div class="desc">Port 5000</div></div>
+    <div class="flow-step"><div class="label">Backend</div><div class="desc">Port 8000</div></div>
+    <div class="flow-step"><div class="label">Frontend</div><div class="desc">Port 5173</div></div>
+  </div>
+  <p>The root <code>run.py</code> launcher starts all three services simultaneously. It checks port availability, handles graceful shutdown on Ctrl+C, and supports <code>--skip-mlflow</code> to run without the tracking server.</p>
+
+  <h3>Step 2 — Authentication</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="label">Landing</div><div class="desc">Marketing page</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Register</div><div class="desc">Email + password</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">JWT Token</div><div class="desc">Stored in localStorage</div></div>
+  </div>
+  <p>JWT authentication with HS256. Tokens expire after 24 hours. Passwords are hashed with bcrypt. All API routes require a Bearer token via the <code>get_current_user</code> dependency.</p>
+
+  <h3>Step 3 — Upload</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="label">Upload</div><div class="desc">CSV or Excel</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Ingest</div><div class="desc">FileConnector</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Profile</div><div class="desc">Column stats + correlations</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Engineer</div><div class="desc">Roles + readiness score</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Dashboard</div><div class="desc">Starter artifact</div></div>
+  </div>
+  <p>The upload workflow validates the filename, ingests via FileConnector, profiles the DataFrame, builds the data engineering contract, stores in unified tables format, generates a starter dashboard artifact, and logs to MLflow. For multi-sheet Excel, it enters the Data Model review flow instead.</p>
+
+  <h3>Step 4 — Data Model Review <span style="color:var(--amber); font-size:0.8rem;">(Multi-table only)</span></h3>
+  <div class="flow">
+    <div class="flow-step"><div class="label">Detect</div><div class="desc">Tables + sheets</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Infer</div><div class="desc">PK/FK relationships</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Review</div><div class="desc">User confirms</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Materialize</div><div class="desc">Joined working dataset</div></div>
+  </div>
+  <p>The system detects tables from Excel sheets, infers relationships using four strategies, and presents them for user confirmation. Data Dictionary sheets are automatically mapped. Confirmation materializes a joined working dataset with <code>Table__Column</code> prefixed names.</p>
+
+  <h3>Step 5 — Data Pulse</h3>
+  <p>Once data is uploaded, the Data Pulse tab shows:</p>
+  <ul>
+    <li><strong>KPI Cards</strong> — Rows, columns, missing cells, duplicates</li>
+    <li><strong>Dataset Context</strong> — Description coverage %, top correlation</li>
+    <li><strong>Engineering Summary</strong> — Readiness score (0-10), semantic roles, warnings, recommended actions</li>
+    <li><strong>Column Explorer</strong> — Paginated column cards with mini charts (histograms for numeric, bar charts for categorical), type badges, "Ask in Explorer" action</li>
+    <li><strong>Bivariate Analysis</strong> — Three tables: numeric correlations, categorical associations, numeric-categorical group differences</li>
+  </ul>
+
+  <h3>Step 6 — Explorer (Chat)</h3>
+  <div class="flow">
+    <div class="flow-step"><div class="label">User Ask</div><div class="desc">Natural language</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Route</div><div class="desc">Intent classify</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Agent</div><div class="desc">Analyst or Engineer</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Skill</div><div class="desc">Query / Viz / etc.</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="label">Result</div><div class="desc">Answer + chart + SQL</div></div>
+  </div>
+  <p>Multi-session chat interface with context attachments from Data Pulse. The coordinator routes to the appropriate agent and skill. SQL is generated and executed against DuckDB. Charts are suggested from results. Agent metadata badges show the active lead, skill used, response mode, and SQL executed.</p>
+
+  <h3>Step 7 — Executive Report</h3>
+  <p>For custom chat reports, the Reporter first proposes a content-free plan. The user can revise section names, order, purpose, evidence fields, and chart intent. The pipeline below starts only after the user confirms that plan.</p>
+  <div class="pipeline">
+    <div class="pipeline-step">
+      <div class="num">01</div>
+      <div class="name">Readiness</div>
+      <div class="detail">DataEngineerAgent identifies trustable measures, caution columns, domain context</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="num">02</div>
+      <div class="name">Investigation</div>
+      <div class="detail">LLM plans 5-8 SQL queries, executes them, collects findings with charts</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="num">03</div>
+      <div class="name">Narrative</div>
+      <div class="detail">LLM produces SBAR-structured JSON with findings, action plan, prognosis</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="num">04</div>
+      <div class="name">Governance</div>
+      <div class="detail">Validates completeness: central theme, metrics, charts, data story</div>
+    </div>
+    <div class="pipeline-step">
+      <div class="num">05</div>
+      <div class="name">Approval</div>
+      <div class="detail">Stored as draft, requires human approve/reject before considered final</div>
+    </div>
+  </div>
+
+  <h3>Step 8 — Approval Workflow</h3>
+  <p>All generated artifacts (dashboards, charts, reports) are stored as drafts. Users must explicitly approve or reject them through the UI. This is a governance control to prevent unvalidated analytics from being treated as authoritative.</p>
+</div>
+
+<!-- ===== AI AGENTS ===== -->
+<div class="section" id="agents">
+  <h2>6. AI Agents <span class="badge">Agentic System</span></h2>
+
+  <h3>Agent Architecture</h3>
+  <p>The agent system has two layers: four product agents in <code>app/agents/</code> and reusable, bounded skills in <code>data_berge_core/skills/</code>.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <h4><span class="dot dot-purple"></span> TeamManagerAgent</h4>
+      <p>Owns each conversation turn. Gemini decides whether to reply directly or issue typed assignments to one or more specialists. It never answers factual dataset questions without delegating them to an agent with trusted tools.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-cyan"></span> DataAnalystAgent</h4>
+      <p>Owns dataset intake, profiling, calculations, SQL, interpretation, and visualization. Manager-selected skills avoid a second routing call, while deterministic profile and query tools keep factual answers grounded.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-amber"></span> DataEngineerAgent</h4>
+      <p>Data preparation agent. Uses EngineeringSkill. Handles questions about data quality, schema meaning, readiness scoring, cleaning recommendations, semantic role inference, and typing issues.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-green"></span> ReportAgent</h4>
+      <p>Owns report planning, narrative hierarchy, section selection, chart placement, stateful plan revision, and confirmed execution. Custom reports expose their complete plan before any report content is generated.</p>
+    </div>
+  </div>
+
+  <h3>Manager Decisions</h3>
+  <table>
+    <tr><th>Action</th><th>When Used</th><th>Behavior</th></tr>
+    <tr><td><strong>respond</strong></td><td>Conversation or clarification</td><td>The Team Manager replies directly without invoking a dataset tool.</td></tr>
+    <tr><td><strong>delegate</strong></td><td>Dataset or report work</td><td>The Team Manager assigns a typed task and skill to the appropriate specialist.</td></tr>
+    <tr><td><strong>multi-agent delegate</strong></td><td>Distinct cross-domain work</td><td>The Team Manager assigns scoped tasks to multiple specialists and their grounded outputs are combined.</td></tr>
+  </table>
+
+  <h3>Agentic Foundation</h3>
+  <div class="card-grid">
+    <div class="card">
+      <h4><span class="dot dot-cyan"></span> Typed Assignments</h4>
+      <p>Every manager decision is validated against a Pydantic schema containing an action, intent, focus, specialist, task, and allowed skill. Invalid decisions fall back to a single safe role assignment.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot dot-purple"></span> AgentMemory</h4>
+      <p>JSON-file-backed persistent memory. Stores analyses, patterns, preferences, and summaries with TTL support and LRU eviction (max 500 entries). Injected into agent prompts as context.</p>
+    </div>
+  </div>
+
+  <h3>Chat Flow (End-to-End)</h3>
+  <ol>
+    <li>Frontend sends message with <code>dataset_id</code> and <code>session_id</code> to <code>/api/projects/{id}/chat</code></li>
+    <li><code>chat_workflow.run_chat_workflow</code> resolves the dataset (handling relational schemas, materialization)</li>
+    <li>Creates an <code>AnalyticsTeam</code> with the Team Manager and three specialist agents</li>
+    <li><code>team.coordinator.respond()</code> asks the Team Manager for a typed decision:
+      <ul>
+        <li>Replies directly for conversation, frustration, or clarification</li>
+        <li>Delegates dataset work to Analyst or Engineer and report work to Reporter</li>
+        <li>Allows the selected specialist to execute its bounded profile, SQL, chart, engineering, or report tools</li>
+        <li>Preserves structured artifacts such as SQL, rows, charts, and versioned report plans</li>
+        <li>Records insights to AgentMemory</li>
+        <li>Returns response with evidence, SQL, data, charts, metadata</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>LLM Integration</h3>
+  <p>When <code>AGNO_MODEL</code> and a valid API key are configured, the Team Manager uses the LLM for autonomous assignment and specialist agents use it for SQL planning, interpretation, report narration, and visualization planning. Deterministic tools remain responsible for data access and validation. If the manager model is unavailable, the coordinator falls back to one safe specialist assignment. OpenAI-compatible endpoints are supported through <code>AGNO_BASE_URL</code>.</p>
+
+  <h3>Skills</h3>
+  <table>
+    <tr><th>Skill</th><th>Agent</th><th>Purpose</th></tr>
+    <tr><td>IntakeSkill</td><td>Analyst</td><td>Dataset overview, first-time understanding</td></tr>
+    <tr><td>ProfilerSkill</td><td>Analyst</td><td>Column-level profiling, statistics, distributions</td></tr>
+    <tr><td>QuerySkill</td><td>Analyst</td><td>Natural language to SQL, data querying</td></tr>
+    <tr><td>VisualizationSkill</td><td>Analyst</td><td>Chart suggestion and generation from data</td></tr>
+    <tr><td>ReportingSkill</td><td>Reporter</td><td>Versioned report planning followed by confirmed narrative generation</td></tr>
+    <tr><td>EngineeringSkill</td><td>Engineer</td><td>Data quality, readiness scoring, cleaning recommendations</td></tr>
+    <tr><td>GovernanceSkill</td><td>Engineer</td><td>Report validation, completeness checks, compliance review</td></tr>
+  </table>
+</div>
+
+<!-- ===== FEATURES ===== -->
+<div class="section" id="features">
+  <h2>7. Key Features <span class="badge">Capabilities</span></h2>
+
+  <h3>Data Pulse — Profiling Dashboard</h3>
+  <ul>
+    <li><strong>Four KPI cards</strong> — Rows, columns, missing cells, duplicate rows</li>
+    <li><strong>Dataset Context panel</strong> — Description coverage percentage, top numeric correlation</li>
+    <li><strong>Analyst Readiness panel</strong> — Data engineering contract with readiness score (0-10), semantic role breakdown, warnings, recommended actions</li>
+    <li><strong>Paginated Column Explorer</strong> — Individual column cards with mini Recharts (histograms for numeric, top-value bar charts for categorical), type badges (numeric/text/categorical), key type badges (PK/FK)</li>
+    <li><strong>Bivariate Analysis</strong> — Three tables: numeric-numeric correlations (Pearson), categorical-categorical associations (chi-square), numeric-categorical group differences (ANOVA)</li>
+    <li><strong>Relational mode</strong> — Per-table grid with column details and detected relationships</li>
+  </ul>
+
+  <h3>Explorer — Natural Language Chat</h3>
+  <ul>
+    <li><strong>Multi-session</strong> — Create, list, switch between chat sessions</li>
+    <li><strong>Context attachments</strong> — Click "Ask in Explorer" on any column to attach context</li>
+    <li><strong>Inline visualizations</strong> — Charts rendered via ChartBlock from agent-generated ChartSpec</li>
+    <li><strong>Report plans</strong> — Review ordered sections, purposes, evidence fields, and chart intent before confirming generation</li>
+    <li><strong>Agent metadata</strong> — Badges showing Analyst/Engineer lead, active skill, response mode, SQL executed</li>
+    <li><strong>Export context</strong> — Debug button to dump full backend context</li>
+  </ul>
+
+  <h3>Executive Report — SBAR Pipeline</h3>
+  <ul>
+    <li><strong>Configuration</strong> — Audience, goal, horizon, tone, focus areas</li>
+    <li><strong>5-step pipeline</strong> — Readiness → Investigation → Narrative → Governance → Storage</li>
+    <li><strong>SBAR framework</strong> — Situation, Background, Assessment, Recommendation</li>
+    <li><strong>Governance review</strong> — Validates completeness before artifact creation</li>
+    <li><strong>Approval workflow</strong> — Draft status, requires explicit human approval</li>
+  </ul>
+
+  <h3>Relational Schema — Multi-Table</h3>
+  <ul>
+    <li><strong>Auto-detection</strong> — Multi-sheet Excel files parsed into table-per-sheet</li>
+    <li><strong>4 relationship inference strategies</strong> — Explicit PK/FK, column name matching, table-name FK patterns, value coverage analysis</li>
+    <li><strong>Data dictionary mapping</strong> — Automatic detection and mapping of description sheets</li>
+    <li><strong>Materialization</strong> — Confirmed schemas joined into a single working dataset with <code>Table__Column</code> prefixed names</li>
+  </ul>
+
+  <h3>OpenDOSM Connector</h3>
+  <ul>
+    <li><strong>Curated catalog</strong> — 15+ datasets (CPI, population, births, deaths, marriages, fertility, household profiles)</li>
+    <li><strong>Background download</strong> — Polling-based task status</li>
+    <li><strong>Auto-relationships</strong> — Lookup table resolution from metadata field descriptions</li>
+    <li><strong>Storage limit</strong> — 10 MB per user, enforced on upload and connect operations</li>
+  </ul>
+</div>
+
+<!-- ===== DATABASE ===== -->
+<div class="section" id="database">
+  <h2>8. Database <span class="badge">SQLite</span></h2>
+  <p>SQLite database at <code>data/app.db</code> with 6 core tables. All flexible data is stored as JSON blobs in <code>*_json</code> columns. Per-user data isolation enforced by <code>user_id</code> columns on every table.</p>
+
+  <table>
+    <tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr>
+    <tr>
+      <td><strong>users</strong></td>
+      <td><code>id</code>, <code>email</code> (unique), <code>name</code>, <code>password_hash</code>, <code>storage_used</code></td>
+      <td>Authentication, storage tracking</td>
+    </tr>
+    <tr>
+      <td><strong>projects</strong></td>
+      <td><code>id</code>, <code>user_id</code>, <code>name</code>, <code>description</code></td>
+      <td>Top-level workspace containers</td>
+    </tr>
+    <tr>
+      <td><strong>datasets</strong></td>
+      <td><code>id</code>, <code>project_id</code>, <code>name</code>, <code>source_path</code>, <code>working_path</code>, <code>row_count</code>, <code>column_count</code>, <code>profile_json</code></td>
+      <td>Uploaded data files with full profiling results stored as JSON</td>
+    </tr>
+    <tr>
+      <td><strong>chat_sessions</strong></td>
+      <td><code>id</code>, <code>project_id</code>, <code>dataset_id</code>, <code>title</code></td>
+      <td>Chat session containers</td>
+    </tr>
+    <tr>
+      <td><strong>chat_messages</strong></td>
+      <td><code>id</code>, <code>session_id</code>, <code>role</code>, <code>content</code>, <code>payload_json</code></td>
+      <td>Individual messages with agent metadata stored as JSON</td>
+    </tr>
+    <tr>
+      <td><strong>artifacts</strong></td>
+      <td><code>id</code>, <code>dataset_id</code>, <code>kind</code> (dashboard/chart/report), <code>status</code> (draft/approved/rejected), <code>payload_json</code></td>
+      <td>Generated outputs requiring approval</td>
+    </tr>
+    <tr>
+      <td><strong>relational_schemas</strong></td>
+      <td><code>id</code>, <code>project_id</code>, <code>name</code>, <code>schema_json</code>, <code>status</code> (draft/confirmed/active)</td>
+      <td>Multi-table schema definitions with relationship metadata</td>
+    </tr>
+  </table>
+
+  <div class="info-box">
+    <p><strong>Migration:</strong> The database layer uses a <code>_migrate</code> function that adds missing columns and tables to existing databases, enabling schema evolution without manual SQL migrations.</p>
+  </div>
+</div>
+
+<!-- ===== CONFIGURATION ===== -->
+<div class="section" id="config">
+  <h2>9. Configuration <span class="badge">Environment</span></h2>
+
+  <h3>Environment Variables</h3>
+  <table>
+    <tr><th>Variable</th><th>Default</th><th>Purpose</th></tr>
+    <tr><td><code>APP_NAME</code></td><td>Data-Berge OS</td><td>Application display name</td></tr>
+    <tr><td><code>APP_ENV</code></td><td>local</td><td>Runtime environment</td></tr>
+    <tr><td><code>CORS_ALLOW_ORIGINS</code></td><td>localhost:5173,localhost:3000</td><td>Allowed frontend origins</td></tr>
+    <tr><td><code>DB_PATH</code></td><td>../data/app.db</td><td>SQLite database path</td></tr>
+    <tr><td><code>DATA_DIR</code></td><td>../data</td><td>Root data directory</td></tr>
+    <tr><td><code>AGNO_MODEL</code></td><td>openai:gpt-4.1-mini</td><td>LLM model identifier (provider:model format)</td></tr>
+    <tr><td><code>OPENAI_API_KEY</code></td><td>(empty)</td><td>OpenAI API key</td></tr>
+    <tr><td><code>AGNO_API_KEY</code></td><td>(empty)</td><td>Generic LLM API key</td></tr>
+    <tr><td><code>AGNO_BASE_URL</code></td><td>(empty)</td><td>OpenAI-compatible endpoint URL</td></tr>
+    <tr><td><code>MLFLOW_TRACKING_ENABLED</code></td><td>false</td><td>Enable MLflow logging</td></tr>
+    <tr><td><code>MLFLOW_TRACKING_URI</code></td><td>http://localhost:5000</td><td>MLflow server URL</td></tr>
+    <tr><td><code>MLFLOW_EXPERIMENT_NAME</code></td><td>Data-Berge OS</td><td>MLflow experiment name</td></tr>
+    <tr><td><code>MLFLOW_LOG_PROMPT_INSTANCES</code></td><td>false</td><td>Log full prompt text to MLflow</td></tr>
+    <tr><td><code>MLFLOW_PROMPT_VERSION</code></td><td>query-analyst-v1</td><td>Prompt registry version tag</td></tr>
+  </table>
+
+  <h3>Security</h3>
+  <ul>
+    <li><strong>JWT authentication</strong> — HS256 tokens, 24-hour expiry (configurable)</li>
+    <li><strong>Password hashing</strong> — bcrypt, truncated to 72 bytes per bcrypt spec</li>
+    <li><strong>Per-user isolation</strong> — All data scoped by <code>user_id</code> columns</li>
+    <li><strong>Storage limits</strong> — 10 MB per user, enforced on upload</li>
+    <li><strong>SQL safety</strong> — DuckDB queries validated as SELECT-only via <code>validate_select</code></li>
+  </ul>
+
+  <h3>Startup</h3>
+  <pre><code># Start everything (MLflow + Backend + Frontend)
+python run.py
+
+# Skip MLflow
+python run.py --skip-mlflow
+
+# Individual services
+uvicorn app.main:app --reload --port 8000   # Backend
+npm run dev                                   # Frontend (Vite)</code></pre>
+</div>
+
+<!-- ===== API REFERENCE ===== -->
+<div class="section" id="api">
+  <h2>10. API Reference <span class="badge">REST Endpoints</span></h2>
+  <p>All endpoints are mounted under <code>/api</code> and require JWT Bearer authentication unless noted.</p>
+
+  <table>
+    <tr><th>Prefix</th><th>Key Endpoints</th><th>Description</th></tr>
+    <tr><td><code>/auth</code></td><td><code>POST /register</code>, <code>POST /login</code>, <code>GET /me</code></td><td>Registration, authentication, user profile</td></tr>
+    <tr><td><code>/projects</code></td><td><code>GET /</code>, <code>POST /</code>, <code>GET /{id}/overview</code></td><td>Project CRUD and overview</td></tr>
+    <tr><td><code>/projects/{id}/datasets</code></td><td><code>POST /upload</code>, <code>GET /</code>, <code>DELETE /{did}</code>, <code>GET /{did}/profile</code></td><td>File upload, listing, deletion, profile retrieval</td></tr>
+    <tr><td><code>/projects/{id}/chat</code></td><td><code>POST /send</code>, <code>GET /history</code>, <code>POST /clear</code></td><td>Chat messaging with AI agents</td></tr>
+    <tr><td><code>/projects/{id}/chat-sessions</code></td><td><code>POST /</code>, <code>GET /</code>, <code>DELETE /{sid}</code></td><td>Chat session management</td></tr>
+    <tr><td><code>/projects/{id}/reports</code></td><td><code>POST /generate</code></td><td>Executive report generation pipeline</td></tr>
+    <tr><td><code>/projects/{id}/artifacts</code></td><td><code>GET /</code>, <code>POST /{aid}/approve</code>, <code>POST /{aid}/reject</code></td><td>Artifact listing and approval workflow</td></tr>
+    <tr><td><code>/projects/{id}/relational-schemas</code></td><td><code>POST /upload</code>, <code>GET /</code>, <code>PUT /{sid}</code>, <code>DELETE /{sid}</code>, <code>POST /{sid}/preview</code>, <code>POST /{sid}/dictionary</code></td><td>Multi-table schema management, preview, dictionary mapping</td></tr>
+    <tr><td><code>/opendosm</code></td><td><code>GET /catalog</code>, <code>POST /connect</code>, <code>GET /status/{tid}</code></td><td>OpenDOSM dataset catalog, connection, status polling</td></tr>
+  </table>
+</div>
+
+<!-- ===== DIRECTORY STRUCTURE ===== -->
+<div class="section" id="structure">
+  <h2>11. Project Structure <span class="badge">File Layout</span></h2>
+  <pre><code>Data-Berge-OS/
+├── run.py                          # Launcher (starts MLflow + Backend + Frontend)
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+│       ├── App.tsx                 # Main orchestrator, routing, sidebar
+│       ├── main.tsx                # Entry point
+│       ├── services/
+│       │   └── api.ts              # fetch wrapper with JWT auth
+│       ├── types/
+│       │   └── domain.ts           # TypeScript interfaces
+│       ├── utils/
+│       │   └── format.ts           # Number/date formatting helpers
+│       └── components/
+│           ├── SchemaProfileView.tsx   # Relational schema profiling
+│           ├── ProfileView.tsx         # Data Pulse (single-table)
+│           ├── ChatExplorer.tsx        # Explorer chat interface
+│           ├── ReportBuilder.tsx       # Executive report builder
+│           ├── RelationshipEditor.tsx  # Schema review + confirm
+│           ├── ChartBlock.tsx          # Recharts wrapper
+│           ├── MetricCard.tsx          # KPI card component
+│           ├── LandingPage.tsx         # Marketing page
+│           ├── LoginPage.tsx           # Auth forms
+│           └── OpenDOSMPanel.tsx       # OpenDOSM connector
+│
+├── backend/
+│   ├── app/
+│   │   ├── main.py                 # FastAPI app, CORS, router mounting
+│   │   ├── database.py             # SQLite connection, migrations
+│   │   ├── auth.py                 # JWT, bcrypt, user dependency
+│   │   ├── api/
+│   │   │   ├── auth.py
+│   │   │   ├── projects.py
+│   │   │   ├── datasets.py
+│   │   │   ├── chat.py
+│   │   │   ├── chat_sessions.py
+│   │   │   ├── reports.py
+│   │   │   ├── artifacts.py
+│   │   │   ├── relational.py
+│   │   │   └── opendosm.py
+│   │   ├── workflows/
+│   │   │   ├── upload_workflow.py
+│   │   │   ├── chat_workflow.py
+│   │   │   └── report_workflow.py
+│   │   ├── agents/
+│   │   │   ├── data_analyst.py     # DataAnalystAgent
+│   │   │   ├── data_engineer.py    # DataEngineerAgent
+│   │   │   ├── report.py           # ReportAgent
+│   │   │   ├── coordinator.py      # TeamManagerAgent decisions
+│   │   │   └── team.py             # AnalyticsTeam facade
+│   │   └── services/
+│   │       ├── profiling.py        # Core profiler
+│   │       ├── query_engine.py     # Natural language → SQL
+│   │       ├── relational.py       # Multi-table ingestion
+│   │       ├── data_engineering.py # Readiness scoring
+│   │       ├── opendosm.py         # OpenDOSM connector
+│   │       └── llm_observability.py # MLflow integration
+│   │
+│   └── data_berge_core/            # Reusable analytics primitives
+│       ├── contracts/              # Protocols/interfaces
+│       ├── skills/
+│       │   ├── intake.py
+│       │   ├── profiling.py
+│       │   ├── query.py
+│       │   ├── visualization.py
+│       │   ├── reporting.py
+│       │   ├── engineering.py
+│       │   └── governance.py
+│       ├── report_document.py      # Typed report composition
+│       └── memory.py               # AgentMemory
+│
+├── data/
+│   ├── app.db                      # SQLite database
+│   ├── uploads/                    # Uploaded files
+│   └── artifacts/                  # Generated artifacts
+│
+└── docs/
+    └── documentation.html          # This file</code></pre>
+</div>
+
+</div>
+
+<div style="text-align:center; padding:40px; color:var(--text-muted); font-size:0.8rem; border-top:1px solid var(--border);">
+  Data Berge OS Documentation — Auto-generated from source code analysis
+</div>
+
+</body>
+</html>

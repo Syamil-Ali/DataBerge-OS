@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data-Berge OS Agent Architecture</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f0f4fa;
+      --text: #18212f;
+      --muted: #526074;
+      --accent: #2563eb;
+      --border: #d7e0ec;
+      --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    .page {
+      width: min(980px, calc(100% - 32px));
+      margin: 32px auto 48px;
+    }
+
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #e8f0ff;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(30px, 4vw, 42px);
+      line-height: 1.12;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      max-width: 760px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 26px;
+    }
+
+    .summary-card,
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card {
+      padding: 18px;
+    }
+
+    .summary-card h2 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .section {
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+
+    .section h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .section p {
+      margin: 0 0 12px;
+    }
+
+    ol,
+    ul {
+      margin: 12px 0 0 22px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 8px;
+    }
+
+    code {
+      font-family: Consolas, "SFMono-Regular", monospace;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: 0.95em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .mini-card {
+      padding: 18px;
+      border-radius: 16px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+    }
+
+    .mini-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .mini-card p,
+    .mini-card ul {
+      margin-top: 0;
+      color: var(--muted);
+    }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+    }
+
+    .flow-step strong {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 20px, 980px);
+        margin: 18px auto 28px;
+      }
+
+      .hero,
+      .section {
+        padding: 22px;
+      }
+
+      .lead {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div style="margin:16px auto;max-width:1100px;padding:12px 16px;border:1px solid #f59e0b;background:#fffbeb;color:#78350f;border-radius:6px;">
+    <strong>Archived architecture:</strong> This page describes the previous heuristic coordinator. The current runtime uses a TeamManagerAgent with typed specialist assignments; see <a href="documentation.html">the main documentation</a>.
+  </div>
+  <main class="page">
+    <section class="hero">
+      <span class="eyebrow">Data-Berge OS</span>
+      <h1>Agent Architecture, Explained Simply</h1>
+      <p class="lead">
+        Think of the app like a small company that works on datasets. We cleaned up the workers,
+        the skills they use, and the way they pass work to each other.
+      </p>
+
+      <div class="summary">
+        <article class="summary-card">
+          <h2>Agents</h2>
+          <p>The workers with roles, like analyst and engineer.</p>
+        </article>
+        <article class="summary-card">
+          <h2>Skills</h2>
+          <p>The reusable abilities those workers use to do the job.</p>
+        </article>
+        <article class="summary-card">
+          <h2>Services</h2>
+          <p>The fact machines that compute profiles, warnings, and readiness.</p>
+        </article>
+        <article class="summary-card">
+          <h2>Coordinator</h2>
+          <p>The traffic police deciding who should lead the conversation.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>1. We separated workers from skills</h2>
+      <p>
+        Before, some files called “agents” were really just abilities mixed into product code.
+        Now the split is cleaner:
+      </p>
+      <div class="grid">
+        <article class="mini-card">
+          <h3>Agents = workers</h3>
+          <ul>
+            <li><code>DataAnalystAgent</code> = the analyst worker</li>
+            <li><code>DataEngineerAgent</code> = the engineer worker</li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <h3>Skills = abilities</h3>
+          <ul>
+            <li><code>QuerySkill</code> = answer analysis questions</li>
+            <li><code>ReportingSkill</code> = make reports</li>
+            <li><code>EngineeringSkill</code> = handle cleaning and readiness</li>
+          </ul>
+        </article>
+      </div>
+      <p><strong>Simple version:</strong> worker = person, skill = what that person knows how to do.</p>
+    </section>
+
+    <section class="section">
+      <h2>2. The two main workers can now take turns</h2>
+      <p>The app now has three key pieces:</p>
+      <ul>
+        <li><code>DataAnalystAgent</code></li>
+        <li><code>DataEngineerAgent</code></li>
+        <li><code>TeamCoordinator</code></li>
+      </ul>
+      <p>
+        The <code>TeamCoordinator</code> is like a teacher in class deciding who should answer.
+      </p>
+      <ul>
+        <li>“What is the most important feature?” → analyst answers</li>
+        <li>“Can we trust these columns?” → engineer answers</li>
+        <li>“Okay, what insight next?” → analyst takes over again</li>
+      </ul>
+      <p>
+        So now the chat can switch between roles instead of one agent pretending to know everything.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>3. We made <code>DataEngineerAgent</code> smaller and cleaner</h2>
+      <p>
+        Before, the engineer role was carrying too many responsibilities at once:
+      </p>
+      <ul>
+        <li>deciding when to speak</li>
+        <li>building the engineering contract</li>
+        <li>making prompts</li>
+        <li>answering cleaning questions</li>
+        <li>handling profile logic</li>
+      </ul>
+      <p>
+        That was too much for one class, so we extracted the reusable brain into
+        <code>EngineeringSkill</code>.
+      </p>
+      <ul>
+        <li><code>DataEngineerAgent</code> = the engineer role</li>
+        <li><code>EngineeringSkill</code> = the engineer ability/brain</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>4. Your profiling script still matters a lot</h2>
+      <p>
+        We did <strong>not</strong> throw away your profiling logic. These app services still compute the truth:
+      </p>
+      <ul>
+        <li><code>backend/app/services/profiling.py</code></li>
+        <li><code>backend/app/services/data_engineering.py</code></li>
+      </ul>
+      <p>They still do the real fact work:</p>
+      <ul>
+        <li>column types</li>
+        <li>missing values</li>
+        <li>correlations</li>
+        <li>readiness score</li>
+        <li>warnings</li>
+        <li>semantic roles</li>
+      </ul>
+      <p>
+        So the split is:
+      </p>
+      <ul>
+        <li><strong>services</strong> = compute facts</li>
+        <li><strong>skills</strong> = use the facts</li>
+        <li><strong>agents</strong> = talk to the user</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>5. We made the code more reusable</h2>
+      <p>
+        Before, too much code was glued directly to the local database, local files, local query engine,
+        and local artifact storage. Now there is a cleaner plug-and-socket system.
+      </p>
+      <div class="grid">
+        <article class="mini-card">
+          <h3>Contracts</h3>
+          <p>These are the rules that say what the core package needs.</p>
+          <ul>
+            <li><code>ProfileProvider</code></li>
+            <li><code>QueryRunner</code></li>
+            <li><code>ArtifactStore</code></li>
+            <li><code>DatasetContext</code></li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <h3>Adapters</h3>
+          <p>These are the real local implementations used by this app.</p>
+          <ul>
+            <li>load from SQLite</li>
+            <li>run SQL with DuckDB</li>
+            <li>save charts and reports locally</li>
+          </ul>
+        </article>
+      </div>
+      <p>
+        So the reusable code now says “give me a query runner” instead of “I only work with this one exact local function”.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>6. We created a reusable core package</h2>
+      <div class="grid">
+        <article class="mini-card">
+          <h3><code>backend/data_berge_core</code></h3>
+          <ul>
+            <li>contracts</li>
+            <li>reusable skills</li>
+            <li>runtime-neutral pieces</li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <h3><code>backend/app</code></h3>
+          <ul>
+            <li>FastAPI routes</li>
+            <li>local DB and storage adapters</li>
+            <li>local settings</li>
+            <li>role agents</li>
+            <li>workflows</li>
+          </ul>
+        </article>
+      </div>
+      <p>
+        The easiest mental picture is:
+      </p>
+      <ul>
+        <li><strong>core package</strong> = engine</li>
+        <li><strong>app package</strong> = car body around the engine</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>7. The folder structure is cleaner now</h2>
+      <div class="grid">
+        <article class="mini-card">
+          <h3>Agents folder</h3>
+          <ul>
+            <li><code>data_analyst.py</code></li>
+            <li><code>data_engineer.py</code></li>
+            <li><code>coordinator.py</code></li>
+            <li><code>team.py</code></li>
+          </ul>
+        </article>
+        <article class="mini-card">
+          <h3>Core skills folder</h3>
+          <ul>
+            <li><code>intake.py</code></li>
+            <li><code>profiler.py</code></li>
+            <li><code>query.py</code></li>
+            <li><code>visualization.py</code></li>
+            <li><code>reporting.py</code></li>
+            <li><code>governance.py</code></li>
+            <li><code>engineering.py</code></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>8. What happens now when a user chats?</h2>
+      <div class="flow">
+        <div class="flow-step">
+          <strong>1</strong>
+          <div>Upload happens.</div>
+        </div>
+        <div class="flow-step">
+          <strong>2</strong>
+          <div>Profiling runs: schema, stats, missingness, and relationships.</div>
+        </div>
+        <div class="flow-step">
+          <strong>3</strong>
+          <div>Engineering contract runs: roles, warnings, readiness, and suggested actions.</div>
+        </div>
+        <div class="flow-step">
+          <strong>4</strong>
+          <div>User asks something in chat.</div>
+        </div>
+        <div class="flow-step">
+          <strong>5</strong>
+          <div>The coordinator chooses who should lead: analyst or engineer.</div>
+        </div>
+        <div class="flow-step">
+          <strong>6</strong>
+          <div>That agent uses its skill set to answer.</div>
+        </div>
+        <div class="flow-step">
+          <strong>7</strong>
+          <div>The answer comes back to the user.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>9. Why this is better</h2>
+      <p>Because now the app is less confusing and easier to grow.</p>
+      <ul>
+        <li>roles are clearer</li>
+        <li>skills are reusable</li>
+        <li>services still compute the truth</li>
+        <li>chat can hand off between roles</li>
+        <li>code is easier to extend later</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>10. The shortest mental model</h2>
+      <ul>
+        <li><strong>services</strong> = calculators</li>
+        <li><strong>skills</strong> = abilities</li>
+        <li><strong>agents</strong> = workers</li>
+        <li><strong>coordinator</strong> = traffic police</li>
+        <li><strong>core package</strong> = reusable brain</li>
+        <li><strong>app package</strong> = local app wiring</li>
+      </ul>
+      <p>
+        That’s basically the whole story.
+      </p>
+    </section>
+
+    <p class="footer-note">
+      Open this file directly in your browser anytime from the <code>docs/</code> folder.
+    </p>
+  </main>
+</body>
+</html>

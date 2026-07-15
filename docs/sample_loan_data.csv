@@ -1,0 +1,13 @@
+Approval,Credit_Score,DTI_Ratio,Employment_Status,Income,Loan_Amount,Loan_Purpose
+Rejected,450,15.5,Unemployed,25000,10000,Medical expenses
+Approved,720,5.2,Employed,85000,25000,Land purchase
+Rejected,510,42.8,Unemployed,32000,5000,Freelance equipment
+Approved,680,22.1,Employed,65000,18000,Home down payment
+Rejected,350,85.5,Unemployed,21000,2000,Legal expenses
+Approved,810,12.4,Employed,120000,50000,Business expansion
+Rejected,550,35.0,Employed,45000,15000,Moving expenses
+Approved,790,8.5,Employed,95000,40000,Content business
+Rejected,610,62.2,Self-employed,52000,12000,Debt consolidation
+Approved,735,18.9,Self-employed,90000,30000,Inventory purchase
+Rejected,480,70.1,Unemployed,28000,7500,Emergency bills
+Approved,760,11.2,Employed,110000,45000,Store renovation
