@@ -22,3 +22,4 @@ techdebt-report/
 .codeanalysis-ignore.json
 navigate.png
 sample view.webp
+.vscode/
