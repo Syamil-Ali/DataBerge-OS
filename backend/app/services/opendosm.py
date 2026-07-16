@@ -1,7 +1,7 @@
 """OpenDOSM API connector — fetch data from Malaysia's official open data portal.
 
-Base URL: https://api.data.gov.my/opendosm
-Docs: https://developer.data.gov.my/static-api/opendosm
+Base URL: https://api.data.gov.my/data-catalogue
+Docs: https://developer.data.gov.my/static-api/data-catalogue
 """
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from typing import Any
 import pandas as pd
 import requests
 
-BASE_URL = "https://api.data.gov.my/opendosm"
+BASE_URL = "https://api.data.gov.my/data-catalogue"
 CATALOGUE_URL = "https://open.dosm.gov.my/data-catalogue"
 
 # Offline fallback used when the live OpenDOSM catalogue cannot be reached.

@@ -10,6 +10,8 @@ from app.settings import (
     AGNO_MODEL,
     AGNO_REQUEST_TIMEOUT_SECONDS,
 )
+from app.services.llm_usage import record_run_usage
+from app.services.llm_observability import set_span_attributes, set_span_outputs, trace_span
 
 try:
     from agno.agent import Agent
@@ -57,6 +59,39 @@ if OpenAILike is not None:
             return params
 else:  # pragma: no cover
     CompatibleOpenAILike = None  # type: ignore[assignment,misc]
+
+
+if Agent is not None:
+    class ObservableAgent(Agent):
+        def run(self, *args: Any, **kwargs: Any) -> Any:
+            agent_name = str(getattr(self, "name", None) or self.__class__.__name__)
+            prompt = args[0] if args else kwargs.get("input") or kwargs.get("message")
+            with trace_span(
+                f"llm.{agent_name}",
+                span_type="LLM",
+                inputs={
+                    "agent": agent_name,
+                    "prompt": prompt,
+                    "stream": kwargs.get("stream", False),
+                },
+            ) as span:
+                run_output = super().run(*args, **kwargs)
+                usage = record_run_usage(run_output)
+                set_span_outputs(span, {
+                    "content": getattr(run_output, "content", None),
+                    "run_id": getattr(run_output, "run_id", None),
+                    "model": getattr(run_output, "model", None),
+                    "model_provider": getattr(run_output, "model_provider", None),
+                    "usage": usage,
+                })
+                set_span_attributes(span, {
+                    "data_berge.agent": agent_name,
+                    "data_berge.llm_usage": usage,
+                    "data_berge.model": usage.get("model") if isinstance(usage, dict) else None,
+                })
+                return run_output
+else:  # pragma: no cover
+    ObservableAgent = None  # type: ignore[assignment,misc]
 
 
 @dataclass
@@ -109,7 +144,7 @@ def make_agno_agent(
     if Agent is None:
         return spec
     try:
-        return Agent(
+        return ObservableAgent(
             name=spec.name,
             model=build_model_config(model_options),
             role=spec.role,

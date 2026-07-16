@@ -18,8 +18,9 @@ import {
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { BivariateAnalysis, Dataset, ProfileColumn, RelationalSchema, TableProfile } from '../types/domain';
-import { formatPercent, formatRange, formatText, formatValue } from '../utils/format';
+import { formatPercent, formatPValue, formatRange, formatText, formatValue } from '../utils/format';
 import { formatColumnChartContext } from '../utils/chartContext';
+import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
 import { SchemaProfileView } from './SchemaProfileView';
 
@@ -52,7 +53,7 @@ function miniData(column: ProfileColumn) {
       count,
     }));
   }
-  return (column.top_values ?? [])
+  return normalizeTopValues(column.top_values)
     .slice(0, 8)
     .map((item) => ({ label: String(item.label).slice(0, 14), count: item.count }));
 }
@@ -62,6 +63,7 @@ function ColumnCard({ column, onAskInChat }: { column: ProfileColumn; onAskInCha
   const isNumeric = column.semantic_type === 'numeric';
   const isText = column.semantic_type === 'text';
   const chartData = miniData(column);
+  const firstTopValue = normalizeTopValues(column.top_values)[0];
   const canAttachChart = Boolean(onAskInChat && chartData.length);
   const context = formatColumnChartContext(column, chartData);
   const attachChart = () => {
@@ -163,7 +165,7 @@ function ColumnCard({ column, onAskInChat }: { column: ProfileColumn; onAskInCha
       {!isNumeric ? (
         <div className="column-footer">
           <span>{isText ? 'Text sample' : 'Top value'}</span>
-          <strong>{fmt(column.sample_values?.[0] ?? column.top_values?.[0]?.label)}</strong>
+          <strong>{fmt(column.sample_values?.[0] ?? firstTopValue?.label)}</strong>
         </div>
       ) : null}
 
@@ -196,7 +198,7 @@ function BivariateBlock({ bivariate }: { bivariate: BivariateAnalysis }) {
             <Fragment key={`${item.left}-${item.right}`}>
               <strong>{item.left} vs {item.right}</strong>
               <span>{fmt(item.correlation)}</span>
-              <span>{fmt(item.p_value)}</span>
+              <span>{formatPValue(item.p_value)}</span>
               <span>{item.interpretation}</span>
             </Fragment>
           )) : (
@@ -223,7 +225,7 @@ function BivariateBlock({ bivariate }: { bivariate: BivariateAnalysis }) {
             {bivariate.categorical_categorical.length ? bivariate.categorical_categorical.slice(0, 6).map((item) => (
               <Fragment key={`${item.left}-${item.right}`}>
                 <strong>{item.left} vs {item.right}</strong>
-                <span>{fmt(item.p_value)}</span>
+                <span>{formatPValue(item.p_value)}</span>
                 <span>{item.interpretation}</span>
               </Fragment>
             )) : (
@@ -248,7 +250,7 @@ function BivariateBlock({ bivariate }: { bivariate: BivariateAnalysis }) {
             {bivariate.numeric_categorical.length ? bivariate.numeric_categorical.slice(0, 6).map((item) => (
               <Fragment key={`${item.numeric}-${item.categorical}`}>
                 <strong>{item.numeric} by {item.categorical}</strong>
-                <span>{fmt(item.p_value)}</span>
+                <span>{formatPValue(item.p_value)}</span>
                 <span>{item.interpretation}</span>
               </Fragment>
             )) : (

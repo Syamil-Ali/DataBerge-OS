@@ -8,7 +8,7 @@ from app.services.files import SUPPORTED_EXTENSIONS, load_column_descriptions, l
 from app.services.profiling import profile_dataframe
 from app.storage import database
 from data_berge_core.contracts import ArtifactStore, DatasetContext, ProfileProvider, QueryRunner
-from data_berge_core.contracts import get_flat_profile
+from data_berge_core.contracts import get_flat_profile, normalize_top_values
 
 try:
     from agno.tools import Toolkit
@@ -165,10 +165,13 @@ class AnalyticsToolkit(Toolkit):
             if any(isinstance(row.get(key), (int, float)) and row.get(key) is not None for row in data)
         ]
         label_keys = [key for key in keys if key not in numeric_keys]
-        if len(keys) > 4 or len(numeric_keys) > 2:
+        if len(keys) > 4 or len(numeric_keys) > 2 or len(label_keys) > 1:
             return {"type": "table", "columns": keys, "title": "Generated result table"}
         if label_keys and numeric_keys:
-            return {"type": "bar", "x": label_keys[0], "y": numeric_keys[:2], "title": "Generated analysis chart"}
+            chart_type = "line" if any(
+                token in label_keys[0].casefold() for token in ("date", "year", "month", "time", "period")
+            ) else "bar"
+            return {"type": chart_type, "x": label_keys[0], "y": numeric_keys[:2], "title": "Generated analysis chart"}
         if len(numeric_keys) >= 2:
             return {"type": "scatter", "x": numeric_keys[0], "y": [numeric_keys[1]], "title": "Numeric relationship"}
         if keys:
@@ -282,7 +285,7 @@ class AnalyticsToolkit(Toolkit):
                 data = [{"bucket": f"{round(bins[i], 2)}-{round(bins[i + 1], 2)}", "count": counts[i]} for i in range(min(len(counts), max(0, len(bins) - 1)))]
                 charts.append({"title": f"Distribution of {col['name']}", "type": "bar", "x": "bucket", "y": ["count"], "data": data})
             if col.get("semantic_type") == "categorical" and col.get("top_values"):
-                charts.append({"title": f"Top values: {col['name']}", "type": "bar", "x": "label", "y": ["count"], "data": col["top_values"]})
+                charts.append({"title": f"Top values: {col['name']}", "type": "bar", "x": "label", "y": ["count"], "data": normalize_top_values(col.get("top_values"))})
             if len(charts) >= 3:
                 break
         return charts

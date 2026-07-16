@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import socket
 import time
@@ -59,6 +60,17 @@ def now_ms() -> int:
 def stable_hash(value: Any) -> str:
     payload = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def pseudonymous_user_hash(user_id: str | None) -> str | None:
+    secret = settings.OBSERVABILITY_ID_SECRET
+    if not user_id or not secret:
+        return None
+    return hmac.new(
+        secret.encode("utf-8"),
+        str(user_id).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()[:32]
 
 
 def json_size(value: Any) -> int:
@@ -120,6 +132,196 @@ def configure_agno_autolog() -> None:
         return
 
 
+def _trace_payload(value: Any, max_chars: int = 250_000) -> Any:
+    """Keep trace payloads inspectable while bounding pathological profile/report sizes."""
+    try:
+        encoded = json.dumps(value, ensure_ascii=False, default=str, allow_nan=False)
+    except (TypeError, ValueError):
+        encoded = json.dumps(value, ensure_ascii=False, default=str)
+    if len(encoded) <= max_chars:
+        return json.loads(encoded)
+    return {
+        "truncated": True,
+        "original_json_chars": len(encoded),
+        "preview": encoded[:max_chars],
+        "payload_hash": stable_hash(value),
+    }
+
+
+def has_active_trace() -> bool:
+    if mlflow is None:
+        return False
+    try:
+        return mlflow.get_current_active_span() is not None
+    except Exception:
+        return False
+
+
+@contextmanager
+def trace_span(
+    name: str,
+    *,
+    span_type: str = "CHAIN",
+    inputs: Any | None = None,
+    attributes: dict[str, Any] | None = None,
+    require_active_trace: bool = True,
+) -> Iterator[Any | None]:
+    """Create a real nested MLflow span without ever blocking application execution."""
+    if not enabled() or (require_active_trace and not has_active_trace()):
+        yield None
+        return
+    try:
+        _configure()
+        manager = mlflow.start_span(name=name, span_type=span_type, attributes=attributes)
+    except Exception:
+        yield None
+        return
+    with manager as span:
+        if inputs is not None:
+            span.set_inputs(_trace_payload(inputs))
+        yield span
+
+
+@contextmanager
+def report_trace(
+    *,
+    project_id: str,
+    dataset: dict[str, Any],
+    artifact_id: str,
+    request: dict[str, Any],
+    user_id: str | None = None,
+) -> Iterator[Any | None]:
+    """Root trace for the live report workflow; child operations nest below it."""
+    if not enabled():
+        yield None
+        return
+    try:
+        _configure()
+        manager = mlflow.start_span(
+            name="Data-Berge report generation",
+            span_type="CHAIN",
+            attributes={
+                "data_berge.workflow": "report_generation",
+                "data_berge.artifact_id": artifact_id,
+            },
+        )
+    except Exception:
+        yield None
+        return
+
+    user_hash = pseudonymous_user_hash(user_id)
+    tags = {
+        "data_berge.kind": "report",
+        "project_id": project_id,
+        "dataset_id": str(dataset.get("id") or ""),
+        "dataset_name": str(dataset.get("name") or ""),
+        "artifact_id": artifact_id,
+        "has_error": "false",
+    }
+    if user_hash:
+        tags["data_berge.user_hash"] = user_hash
+
+    with manager as span:
+        span.set_inputs(_trace_payload(request))
+        try:
+            mlflow.update_current_trace(
+                tags=tags,
+                metadata={
+                    "artifact_id": artifact_id,
+                    "dataset_id": str(dataset.get("id") or ""),
+                    "template": str(request.get("template") or ""),
+                    "report_type": str(request.get("report_type") or ""),
+                },
+                request_preview=f"{request.get('report_type') or request.get('template')} for {dataset.get('name')}",
+                state="IN_PROGRESS",
+                session_id=artifact_id,
+            )
+        except Exception:
+            pass
+        try:
+            yield span
+        except Exception as exc:
+            set_span_outputs(span, {
+                "status": "failed",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            })
+            try:
+                mlflow.update_current_trace(
+                    tags={**tags, "has_error": "true"},
+                    metadata={"error_type": type(exc).__name__},
+                    response_preview=str(exc)[:500],
+                    state="ERROR",
+                )
+            except Exception:
+                pass
+            raise
+        finally:
+            if hasattr(mlflow, "flush_trace_async_logging"):
+                try:
+                    mlflow.flush_trace_async_logging()
+                except Exception:
+                    pass
+
+
+def set_span_outputs(span: Any | None, outputs: Any) -> None:
+    if span is None:
+        return
+    try:
+        span.set_outputs(_trace_payload(outputs))
+    except Exception:
+        return
+
+
+def set_span_attributes(span: Any | None, attributes: dict[str, Any]) -> None:
+    if span is None:
+        return
+    try:
+        for key, value in attributes.items():
+            if value is not None:
+                span.set_attribute(key, _trace_payload(value, max_chars=20_000))
+    except Exception:
+        return
+
+
+def complete_report_trace(
+    span: Any | None,
+    *,
+    outputs: dict[str, Any],
+    metadata: dict[str, Any],
+    usage_payload: dict[str, Any] | None = None,
+) -> None:
+    set_span_outputs(span, outputs)
+    if span is None or mlflow is None:
+        return
+    usage_payload = usage_payload or {}
+    token_usage = usage_payload.get("usage") if isinstance(usage_payload, dict) else None
+    model_name = str(usage_payload.get("model") or settings.AGNO_MODEL)
+    if SpanAttributeKey is not None:
+        try:
+            if token_usage:
+                span.set_attribute(SpanAttributeKey.CHAT_USAGE, token_usage)
+            span.set_attribute(SpanAttributeKey.MODEL, model_name)
+        except Exception:
+            pass
+    trace_metadata = {key: str(value)[:1000] for key, value in metadata.items() if value is not None}
+    if token_usage and TraceMetadataKey is not None:
+        trace_metadata[TraceMetadataKey.TOKEN_USAGE] = json.dumps(token_usage)
+        trace_metadata[TraceMetadataKey.MODEL_ID] = model_name
+    cost = usage_payload.get("cost") if isinstance(usage_payload, dict) else None
+    if cost and TraceMetadataKey is not None:
+        trace_metadata[TraceMetadataKey.COST] = json.dumps(cost)
+    try:
+        mlflow.update_current_trace(
+            metadata=trace_metadata,
+            response_preview=str(outputs.get("title") or "Report draft generated")[:500],
+            state="OK",
+            model_id=model_name,
+        )
+    except Exception:
+        return
+
+
 @contextmanager
 def mlflow_run(run_name: str, tags: dict[str, Any] | None = None) -> Iterator[dict[str, int]]:
     state = {"start_ms": now_ms()}
@@ -146,7 +348,9 @@ def log_profile_run(
     column_count: int,
     profile: dict[str, Any],
     elapsed_ms: int,
+    user_id: str | None = None,
 ) -> None:
+    user_hash = pseudonymous_user_hash(user_id)
     with mlflow_run(
         "data-profile",
         tags={
@@ -154,6 +358,7 @@ def log_profile_run(
             "dataset_id": dataset_id,
             "project_id": project_id,
             "filename": filename,
+            "data_berge.user_hash": user_hash,
         },
     ):
         metadata = profile.get("metadata", {})
@@ -199,6 +404,7 @@ def log_chat_run(
     prompt_info: dict[str, Any] | None = None,
     error: str | None = None,
     session_id: str | None = None,
+    user_id: str | None = None,
 ) -> None:
     prompt_info = prompt_info or {}
     mode = response.get("mode") or infer_mode(response)
@@ -285,7 +491,14 @@ def log_chat_run(
             })
         token_usage = usage_payload.get("usage") if isinstance(usage_payload, dict) else None
         cost = usage_payload.get("cost") if isinstance(usage_payload, dict) else None
-        model_name = settings.AGNO_MODEL
+        model_name = str(usage_payload.get("model") or settings.AGNO_MODEL)
+        model_provider = str(usage_payload.get("provider") or "")
+        llm_calls = usage_payload.get("llm_calls")
+        trace_metadata["model"] = model_name
+        if model_provider:
+            trace_metadata["model_provider"] = model_provider
+        if isinstance(llm_calls, (int, float)):
+            trace_metadata["llm_calls"] = str(int(llm_calls))
         if token_usage:
             trace_metadata.update({
                 "input_tokens": str(token_usage.get("input_tokens", "")),
@@ -297,6 +510,8 @@ def log_chat_run(
                 trace_metadata[TraceMetadataKey.MODEL_ID] = model_name
         if cost and TraceMetadataKey is not None:
             trace_metadata[TraceMetadataKey.COST] = json.dumps(cost)
+        if isinstance(cost, dict) and isinstance(cost.get("total_cost"), (int, float)):
+            trace_metadata["total_cost"] = str(float(cost["total_cost"]))
         trace_tags = {
             "data_berge.kind": "chat",
             "project_id": project_id,
@@ -307,6 +522,9 @@ def log_chat_run(
             "active_skill": str(response.get("active_skill") or ""),
             "has_error": str(bool(error)).lower(),
         }
+        user_hash = pseudonymous_user_hash(user_id)
+        if user_hash:
+            trace_tags["data_berge.user_hash"] = user_hash
 
         @mlflow.trace(name="Data-Berge chat turn", span_type="AGENT")
         def _record_chat_trace(request: dict[str, Any], intermediate: dict[str, Any]) -> dict[str, Any]:

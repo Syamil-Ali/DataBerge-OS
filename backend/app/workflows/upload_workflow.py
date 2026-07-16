@@ -67,5 +67,6 @@ def run_upload_workflow(project_id: str, file_obj, filename: str, user_id: str |
         column_count=int(df.shape[1]),
         profile=table_profile,
         elapsed_ms=profile_elapsed_ms,
+        user_id=user_id,
     )
     return dataset

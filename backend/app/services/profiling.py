@@ -229,7 +229,7 @@ def bivariate_analysis(
         try:
             if stats is not None:
                 r, p = stats.pearsonr(paired[left], paired[right])
-                p_value = round(float(p), 4)
+                p_value = float(p)
             else:
                 r = paired[left].corr(paired[right])
                 p_value = None
@@ -268,7 +268,7 @@ def bivariate_analysis(
             if stats is not None:
                 chi2_raw, p_raw, _, _ = stats.chi2_contingency(contingency)
                 chi2 = round(float(chi2_raw), 4)
-                p_value = round(float(p_raw), 4)
+                p_value = float(p_raw)
             categorical_categorical.append(
                 {
                     "left": left,
@@ -312,7 +312,7 @@ def bivariate_analysis(
             if stats is not None and len(groups) >= 2:
                 f_raw, p_raw = stats.f_oneway(*groups)
                 anova_f = round(float(f_raw), 4)
-                p_value = round(float(p_raw), 4)
+                p_value = float(p_raw)
                 interpretation = interpret_anova(p_value)
         except Exception as exc:
             interpretation = f"Test failed: {exc}"

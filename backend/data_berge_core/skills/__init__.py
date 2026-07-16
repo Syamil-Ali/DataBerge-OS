@@ -15,6 +15,7 @@ from data_berge_core.skills.report_templates import (
 from data_berge_core.skills.visualization import VisualizationSkill
 
 __all__ = [
+    "AggregationGrainSkill",
     "BLOCK_SCHEMAS",
     "EngineeringSkill",
     "GovernanceSkill",
@@ -29,3 +30,4 @@ __all__ = [
     "get_template",
     "list_templates",
 ]
+from data_berge_core.skills.aggregation import AggregationGrainSkill

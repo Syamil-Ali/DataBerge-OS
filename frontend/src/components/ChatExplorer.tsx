@@ -144,8 +144,14 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
   const [sessionsCollapsed, setSessionsCollapsed] = useState(false);
   const [exportingProfile, setExportingProfile] = useState(false);
   const [removingMessageId, setRemovingMessageId] = useState<string | null>(null);
+  const activeSessionIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const updateActiveSession = useCallback((sessionId: string | null) => {
+    activeSessionIdRef.current = sessionId;
+    setActiveSessionId(sessionId);
+  }, []);
 
   const resizeInput = useCallback(() => {
     const inputEl = inputRef.current;
@@ -159,7 +165,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
     setMessages(starterMessages());
     setInput('');
     setBusy(false);
-    setActiveSessionId(null);
+    updateActiveSession(null);
   }, [dataset?.id]);
 
   // Focus input when attachment arrives
@@ -207,7 +213,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
     if (!project) return;
     try {
       const full = await getChatSession(project.id, session.id);
-      setActiveSessionId(session.id);
+      updateActiveSession(session.id);
       onSessionChange?.(session.id);
       setMessages(messagesFromSession(full));
     } catch {
@@ -216,7 +222,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
   };
 
   const handleNewChat = () => {
-    setActiveSessionId(null);
+    updateActiveSession(null);
     onSessionChange?.(null);
     setMessages(starterMessages());
     setInput('');
@@ -228,7 +234,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
     getChatSession(project.id, openSessionId)
       .then((full) => {
         if (cancelled) return;
-        setActiveSessionId(openSessionId);
+        updateActiveSession(openSessionId);
         onSessionChange?.(openSessionId);
         setMessages(messagesFromSession(full));
         onOpenSessionConsumed?.();
@@ -297,7 +303,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
         const title = displayText.length > 50 ? displayText.slice(0, 47) + '...' : displayText || 'New Chat';
         const session = await createChatSession(project.id, dataset.id, title);
         currentSessionId = session.id;
-        setActiveSessionId(session.id);
+        updateActiveSession(session.id);
         onSessionChange?.(session.id);
       } catch {
         // If session creation fails, backend will auto-create one
@@ -308,12 +314,13 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
 
     try {
       const response = await askQuestion(project.id, dataset.id, question, currentSessionId || '', sentAttachments || []);
-      if (response.session_id && !activeSessionId) {
-        setActiveSessionId(response.session_id);
+      if (response.session_id && !currentSessionId && !activeSessionIdRef.current) {
+        updateActiveSession(response.session_id);
         onSessionChange?.(response.session_id);
       }
       // Only show response if still on the same session
-      if (currentSessionId === activeSessionId || !activeSessionId) {
+      const responseSessionId = response.session_id || currentSessionId;
+      if (responseSessionId === activeSessionIdRef.current) {
         setMessages((prev) => [...prev, {
           id: response.chat_message_id,
           role: 'assistant',
@@ -333,7 +340,7 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
         await onArtifactCreated();
       }
     } catch (error) {
-      if (currentSessionId === activeSessionId || !activeSessionId) {
+      if (currentSessionId === activeSessionIdRef.current) {
         setMessages((prev) => [...prev, { role: 'assistant', text: error instanceof Error ? error.message : 'Chat failed.' }]);
       }
     } finally {

@@ -5,8 +5,9 @@ import {
 } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BivariateAnalysis, RelationalSchema, RelationalTable } from '../types/domain';
-import { formatPercent, formatRange, formatText, formatValue } from '../utils/format';
+import { formatPercent, formatPValue, formatRange, formatText, formatValue } from '../utils/format';
 import { formatColumnChartContext } from '../utils/chartContext';
+import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
 
 const COLUMNS_PER_PAGE = 6;
@@ -27,8 +28,7 @@ function mini(c: RelationalTable['columns'][number]) {
     const { bins, counts } = c.histogram;
     return counts.map((ct, i) => ({ label: formatRange(bins[i], bins[i + 1]) || String(i + 1), count: ct }));
   }
-  const tv = c.top_values;
-  const items = Array.isArray(tv) ? tv : tv && typeof tv === 'object' ? Object.entries(tv).map(([l, ct]) => ({ label: l, count: Number(ct) })) : [];
+  const items = normalizeTopValues(c.top_values);
   return items.slice(0, 8).map((it) => ({ label: String(it.label).slice(0, 12), count: it.count }));
 }
 
@@ -45,6 +45,7 @@ function ColumnCard({
   const isNum = column.semantic_type === 'numeric';
   const isTxt = column.semantic_type === 'text';
   const cd = mini(column);
+  const firstTopValue = normalizeTopValues(column.top_values)[0];
   const canAttachChart = Boolean(onAskInChat && cd.length);
   const attachChart = () => {
     if (!onAskInChat) return;
@@ -122,7 +123,7 @@ function ColumnCard({
       {!isNum && (
         <div className="column-footer">
           <span>{isTxt ? 'Text sample' : 'Top values'}</span>
-          <strong>{dv(column.sample_values?.[0] ?? column.top_values?.[0]?.label)}</strong>
+          <strong>{dv(column.sample_values?.[0] ?? firstTopValue?.label)}</strong>
         </div>
       )}
     </article>
@@ -287,7 +288,7 @@ function BivariateBlock({ b }: { b: BivariateAnalysis }) {
             <Fragment key={`${it.left}-${it.right}`}>
               <strong>{it.left} vs {it.right}</strong>
               <span>{fv(it.correlation)}</span>
-              <span>{fv(it.p_value)}</span>
+              <span>{formatPValue(it.p_value)}</span>
               <span>{it.interpretation}</span>
             </Fragment>
           )) : (
@@ -311,7 +312,7 @@ function BivariateBlock({ b }: { b: BivariateAnalysis }) {
             {b.categorical_categorical.length ? b.categorical_categorical.slice(0, 6).map((it) => (
               <Fragment key={`${it.left}-${it.right}`}>
                 <strong>{it.left} vs {it.right}</strong>
-                <span>{fv(it.p_value)}</span>
+                <span>{formatPValue(it.p_value)}</span>
                 <span>{it.interpretation}</span>
               </Fragment>
             )) : (
@@ -333,7 +334,7 @@ function BivariateBlock({ b }: { b: BivariateAnalysis }) {
             {b.numeric_categorical.length ? b.numeric_categorical.slice(0, 6).map((it) => (
               <Fragment key={`${it.numeric}-${it.categorical}`}>
                 <strong>{it.numeric} by {it.categorical}</strong>
-                <span>{fv(it.p_value)}</span>
+                <span>{formatPValue(it.p_value)}</span>
                 <span>{it.interpretation}</span>
               </Fragment>
             )) : (

@@ -6,6 +6,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from app.workflows.chat_workflow import _queue_report_execution
+from app.adapters.analytics_toolkit import AnalyticsToolkit
+from app.agents.data_analyst import DataAnalystAgent
+from data_berge_core.skills.aggregation import AggregationGrainSkill
 from data_berge_core.skills.reporting import ReportingSkill
 
 
@@ -259,6 +262,113 @@ class ReportingSkillTests(unittest.TestCase):
 
         self.assertIn("Annual data with MM-DD fixed at 01-01", prompt)
         self.assertIn("Do not describe a valid source date as stale", prompt)
+
+    def test_report_evidence_accepts_legacy_top_values_mapping(self) -> None:
+        skill = self.make_skill(JsonAgent())
+        dataset = {
+            **DATASET,
+            "profile": {
+                **DATASET["profile"],
+                "columns": [{
+                    **DATASET["profile"]["columns"][0],
+                    "top_values": {"2024-01-01": 7, "2025-01-01": 3},
+                }],
+            },
+        }
+
+        evidence = skill._compact_dataset_evidence(dataset)
+
+        self.assertEqual(
+            evidence["columns"][0]["top_values"],
+            [
+                {"label": "2024-01-01", "count": 7},
+                {"label": "2025-01-01", "count": 3},
+            ],
+        )
+
+    def test_qualitative_key_metric_is_rejected(self) -> None:
+        skill = self.make_skill(JsonAgent())
+
+        metrics = skill._validated_key_metrics([
+            {"name": "Total Population Trend", "value": "Positive Growth"},
+            {"name": "Latest Population", "value": "34.2 million"},
+        ])
+
+        self.assertEqual(metrics, [{"name": "Latest Population", "value": "34.2 million"}])
+
+    def test_investigation_rows_become_a_numeric_finding(self) -> None:
+        finding, evidence = DataAnalystAgent._summarize_investigation_result(
+            "Calculate the amount trend",
+            [
+                {"period": "2020-01-01", "amount": 100.0},
+                {"period": "2021-01-01", "amount": 125.0},
+            ],
+        )
+
+        self.assertIn("increased from 100", finding)
+        self.assertIn("+25.0%", finding)
+        self.assertIn("2 periods", evidence)
+        self.assertNotIn("Calculate", finding)
+
+    def test_planning_instruction_cannot_become_a_top_finding(self) -> None:
+        grounded = ReportingSkill._grounded_findings(
+            [{
+                "title": "Analyze the amount trend over time.",
+                "evidence": "Calculate the total amount.",
+                "severity": "info",
+            }],
+            [{
+                "finding": "Amount increased from 100 in 2020 to 125 in 2021 (+25.0%).",
+                "evidence": "Executed query returned 2 periods: 2020=100; 2021=125.",
+                "confidence": "high",
+            }],
+        )
+
+        self.assertTrue(grounded[0]["title"].startswith("Amount increased"))
+        self.assertTrue(grounded[0]["evidence"].startswith("Executed query"))
+        self.assertEqual(grounded[0]["confidence"], "high")
+
+    def test_cross_tab_result_is_rendered_as_a_table(self) -> None:
+        chart = AnalyticsToolkit.__new__(AnalyticsToolkit).suggest_chart([
+            {"band": "0-9", "segment": "A", "amount": 10.0},
+            {"band": "0-9", "segment": "B", "amount": 12.0},
+        ])
+
+        self.assertEqual(chart["type"], "table")
+
+    def test_aggregation_skill_derives_grain_without_dataset_specific_names(self) -> None:
+        skill = AggregationGrainSkill()
+        dataset = {
+            "profile": {
+                "columns": [
+                    {"name": "period", "semantic_type": "date"},
+                    {"name": "segment", "semantic_type": "categorical", "top_values": {"All": 2, "A": 2, "B": 2}},
+                    {"name": "band", "semantic_type": "categorical", "top_values": {
+                        "Overall": 2, "0-9": 2, "10-19": 2, "10+": 2, "20+": 2,
+                    }},
+                    {"name": "group", "semantic_type": "categorical", "top_values": {
+                        "Total": 2, "parent": 2, "parent_one": 2, "parent_two": 2, "independent": 2,
+                    }},
+                    {"name": "amount", "semantic_type": "numeric", "engineering_role": "measure"},
+                ]
+            }
+        }
+
+        contract = skill.analyze(dataset)
+
+        self.assertTrue(contract["is_preaggregated_cube"])
+        self.assertEqual([item["name"] for item in contract["dimensions"]], ["segment", "band", "group"])
+        band = contract["dimensions"][1]
+        self.assertEqual(band["overlapping_members"], ["10+"])
+        self.assertEqual(band["ordinal_members"], ["0-9", "10-19", "20+"])
+        self.assertEqual(contract["dimensions"][2]["overlapping_members"], ["parent"])
+
+        unsafe = 'SELECT "period", SUM("amount") FROM dataset GROUP BY "period"'
+        self.assertFalse(skill.validate_query(unsafe, contract)[0])
+
+        fallback = skill.fallback_plan(contract)
+        self.assertGreaterEqual(len(fallback["queries"]), 3)
+        self.assertTrue(all(skill.validate_query(query["sql"], contract)[0] for query in fallback["queries"]))
 
     def test_confirmed_plan_survives_chat_queue_validation(self) -> None:
         skill = self.make_skill(JsonAgent())

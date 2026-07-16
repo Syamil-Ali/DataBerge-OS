@@ -7,7 +7,7 @@ from typing import Any
 
 from data_berge_core.contracts import ArtifactStore, ProfileProvider, QueryRunner
 from data_berge_core.runtime import AgentFactory, AgentSpec, ToolkitFactory
-from data_berge_core.contracts import get_flat_profile
+from data_berge_core.contracts import get_flat_profile, normalize_top_values
 from data_berge_core.report_document import is_usable_chart
 from data_berge_core.skills.report_templates import (
     REPORT_TEMPLATES,
@@ -276,6 +276,7 @@ class ReportingSkill:
             f"Return this JSON shape and replace every placeholder with actual report content:\n{output_example_json}\n\n"
             "Rules:\n"
             "- Cite SPECIFIC numbers from findings (e.g., 'Average income for approved loans is $85,000')\n"
+            "- Every key_metrics value must be a verified numeric value, percentage, ratio, currency amount, or date-linked number; qualitative labels such as 'Positive Growth' are findings, not metrics\n"
             "- Only include blocks that were requested — do NOT add extra sections\n"
             "- Severity must match the evidence: critical=urgent action needed, concerning=needs attention, good=positive finding, info=neutral observation\n"
             "- The data_story must explain WHY, not just WHAT. Connect patterns to root causes.\n"
@@ -315,40 +316,11 @@ class ReportingSkill:
             es = {"situation": [es], "background": [], "assessment": [], "recommendation": []}
 
         # Ensure key_metrics
-        key_metrics = narrative.get("key_metrics", [])
+        key_metrics = self._validated_key_metrics(narrative.get("key_metrics", []))
         if not key_metrics:
             key_metrics = self._build_default_metrics(findings, readiness_brief)
 
-        # Ensure findings have severity
-        enhanced_findings = []
-        for f in narrative.get("findings", findings):
-            enhanced_findings.append({
-                "title": f.get("title") or f.get("finding", ""),
-                "severity": f.get("severity", "info"),
-                "confidence": f.get("confidence", "medium"),
-                "evidence": f.get("evidence", f.get("finding", "")),
-                "sql": f.get("sql", ""),
-                "data_preview": f.get("data_preview", []),
-                "chart": f.get("chart"),
-                "columns_used": f.get("columns_used", []),
-            })
-
-        # If no findings from LLM, use the ones we have
-        if not enhanced_findings and findings:
-            for f in findings:
-                severity = "info"
-                if f.get("confidence") == "high":
-                    severity = "concerning"
-                enhanced_findings.append({
-                    "title": f.get("finding", ""),
-                    "severity": severity,
-                    "confidence": f.get("confidence", "medium"),
-                    "evidence": f.get("finding", ""),
-                    "sql": f.get("sql", ""),
-                    "data_preview": f.get("data_preview", []),
-                    "chart": f.get("chart"),
-                    "columns_used": f.get("columns_used", []),
-                })
+        enhanced_findings = self._grounded_findings(narrative.get("findings", []), findings)
 
         resolved_blocks = block_definitions or self._resolve_block_definitions(template, active_blocks)
         block_order = [str(block.get("key")) for block in resolved_blocks if block.get("key")]
@@ -465,6 +437,60 @@ class ReportingSkill:
 
         result["sections"] = self._sections_from_result(result, resolved_blocks)
         return result
+
+    @staticmethod
+    def _validated_key_metrics(value: Any) -> list[dict[str, Any]]:
+        if not isinstance(value, list):
+            return []
+        metrics: list[dict[str, Any]] = []
+        for metric in value:
+            if not isinstance(metric, dict):
+                continue
+            metric_value = str(metric.get("value", "")).strip()
+            if metric_value and re.search(r"\d", metric_value):
+                metrics.append(metric)
+        return metrics
+
+    @classmethod
+    def _grounded_findings(
+        cls,
+        narrative_findings: Any,
+        verified_findings: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        candidates = narrative_findings if isinstance(narrative_findings, list) else []
+        grounded: list[dict[str, Any]] = []
+        for index, source in enumerate(verified_findings):
+            candidate = candidates[index] if index < len(candidates) and isinstance(candidates[index], dict) else {}
+            candidate_title = str(candidate.get("title") or candidate.get("finding") or "").strip()
+            candidate_evidence = str(candidate.get("evidence") or "").strip()
+            title = candidate_title if cls._is_result_statement(candidate_title) else str(source.get("finding", ""))
+            evidence = candidate_evidence if cls._is_result_statement(candidate_evidence) else str(
+                source.get("evidence") or source.get("finding", "")
+            )
+            severity = str(candidate.get("severity", "info")).casefold()
+            if severity not in {"critical", "concerning", "good", "info"}:
+                severity = "info"
+            grounded.append({
+                "title": title,
+                "severity": severity,
+                "confidence": source.get("confidence", "medium"),
+                "evidence": evidence,
+                "sql": source.get("sql", ""),
+                "data_preview": source.get("data_preview", []),
+                "chart": source.get("chart"),
+                "columns_used": source.get("columns_used", []),
+            })
+        return grounded
+
+    @staticmethod
+    def _is_result_statement(value: str) -> bool:
+        if not value or not re.search(r"\d", value):
+            return False
+        return not re.match(
+            r"^\s*(calculate|analy[sz]e|compare|break\s*down|investigate|explore|identify|examine|evaluate)\b",
+            value,
+            re.I,
+        )
 
     def _resolve_block_definitions(
         self,
@@ -646,7 +672,7 @@ class ReportingSkill:
                 "engineering_role": column.get("engineering_role"),
                 "description": column.get("description"),
                 "sample_values": (column.get("sample_values") or [])[:5],
-                "top_values": (column.get("top_values") or [])[:5],
+                "top_values": normalize_top_values(column.get("top_values"))[:5],
                 "quality_notes": column.get("quality_notes") or [],
                 "preparation_notes": column.get("preparation_notes") or [],
             }
@@ -889,24 +915,7 @@ class ReportingSkill:
         if not charts:
             charts = self.tools.starter_charts(get_flat_profile(dataset.get("profile", {})).get("columns", []))
 
-        # Build findings with severity
-        enhanced_findings = []
-        for f in findings:
-            severity = "info"
-            if f.get("confidence") == "high":
-                severity = "concerning"
-            elif f.get("confidence") == "low":
-                severity = "info"
-            enhanced_findings.append({
-                "title": f.get("finding", ""),
-                "severity": severity,
-                "confidence": f.get("confidence", "medium"),
-                "evidence": f.get("finding", ""),
-                "sql": f.get("sql", ""),
-                "data_preview": f.get("data_preview", []),
-                "chart": f.get("chart"),
-                "columns_used": f.get("columns_used", []),
-            })
+        enhanced_findings = self._grounded_findings([], findings)
 
         # Build references
         references = []
@@ -1275,7 +1284,7 @@ class ReportingSkill:
                         "label": value.get("label"),
                         "count": value.get("count"),
                     }
-                    for value in (col.get("top_values") or [])[:5]
+                    for value in normalize_top_values(col.get("top_values"))[:5]
                     if isinstance(value, dict)
                 ],
             }

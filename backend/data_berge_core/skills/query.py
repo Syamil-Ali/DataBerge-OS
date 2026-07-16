@@ -4,8 +4,9 @@ import json
 import re
 from typing import Any
 
-from data_berge_core.contracts import ArtifactStore, ProfileProvider, QueryRunner, get_flat_profile
+from data_berge_core.contracts import ArtifactStore, ProfileProvider, QueryRunner, get_flat_profile, normalize_top_values
 from data_berge_core.runtime import AgentFactory, AgentSpec, ToolkitFactory
+from data_berge_core.skills.aggregation import AggregationGrainSkill
 
 try:
     import mlflow
@@ -39,6 +40,8 @@ class QuerySkill:
         prompt_registry_config: dict[str, Any] | None = None,
     ) -> None:
         self.prompt_registry_config = prompt_registry_config or {}
+        self.aggregation_skill = AggregationGrainSkill()
+        self._grain_contract_cache: dict[str, dict[str, Any]] = {}
         self.tools = toolkit_factory(
             include_tools=[
                 "get_dataset_profile",
@@ -462,6 +465,10 @@ class QuerySkill:
                 sql = str(plan.get("sql", "")).strip()
                 if not sql or not self._queries_dataset(sql):
                     return None
+                if not self.aggregation_skill.validate_query(
+                    sql, self._aggregation_contract(dataset)
+                )[0]:
+                    return None
                 if self._is_raw_preview_sql(sql) and self._question_asks_outcome_distribution(message, dataset):
                     safe_query = self.tools.build_safe_query(dataset["project_id"], dataset["id"], message)
                     safe_sql = safe_query.get("sql")
@@ -519,11 +526,13 @@ class QuerySkill:
         profile_context = self._compact_profile_context(dataset.get("profile", {}))
         recent_history = self._compact_history(history or [])
         profile_context_json = json.dumps(profile_context, ensure_ascii=False)
+        grain_contract = self._aggregation_contract(dataset)
         variables = {
             "dataset_name": str(dataset["name"]),
             "row_count": str(dataset["row_count"]),
             "recent_conversation_json": json.dumps(recent_history, ensure_ascii=False),
             "profile_context_json": profile_context_json,
+            "aggregation_grain_context": self.aggregation_skill.prompt_context(grain_contract),
             "user_question": message,
         }
         template, prompt_metadata = self._load_analysis_planning_template()
@@ -573,6 +582,9 @@ class QuerySkill:
         rendered = template
         for key, value in variables.items():
             rendered = rendered.replace("{{" + key + "}}", value)
+        grain_context = variables.get("aggregation_grain_context", "")
+        if grain_context and "{{aggregation_grain_context}}" not in template:
+            rendered += "\n\nAggregation grain context:\n" + grain_context
         return rendered
 
     def _analysis_planning_template(self) -> str:
@@ -594,6 +606,7 @@ class QuerySkill:
             "- Use SQL only for explicit computations or focused aggregates.\n"
             "- If the question only asks for explanation, reasoning, interpretation, or follow-up on already available information, use profile mode.\n"
             "- If SQL results are needed, prefer aggregated results such as COUNT, AVG, MIN, MAX, MEDIAN, SUM, GROUP BY, or bins. Avoid raw rows unless explicitly requested.\n"
+            "- Follow the aggregation grain context. Never combine aggregate rows with their children; pin unused cube dimensions to one total member and exclude total or overlapping members from breakdowns.\n"
             "- Users often say 'top' when they mean most common; prefer frequency interpretation unless they clearly ask for numerical maximum.\n"
             "- Before writing SQL, map the user's business words to columns using the profile context: column name, semantic_type, role_hint, description, sample_values, top_values, and word_frequencies.\n"
             "- If the user asks about reasons, purposes, explanations, comments, narratives, text, or descriptions, look for text/narrative columns in the profile context and use them as the grouping/detail field.\n"
@@ -619,6 +632,7 @@ class QuerySkill:
             "Rows: {{row_count}}\n"
             "Recent conversation JSON: {{recent_conversation_json}}\n"
             "Profile context JSON: {{profile_context_json}}\n"
+            "Aggregation grain context: {{aggregation_grain_context}}\n"
             "User question: {{user_question}}\n\n"
             "JSON schema:\n"
             "{"
@@ -660,7 +674,7 @@ class QuerySkill:
                 "min": stats.get("min"), "max": stats.get("max"), "std": stats.get("std"),
             }
         if column.get("top_values"):
-            payload["top_values"] = column["top_values"][:3]
+            payload["top_values"] = normalize_top_values(column.get("top_values"))[:3]
         if column.get("word_frequencies"):
             payload["word_frequencies"] = column["word_frequencies"][:12]
         return payload
@@ -760,7 +774,7 @@ class QuerySkill:
         semantic_type = column.get("semantic_type")
         top_labels = {
             re.sub(r"[^a-z0-9]+", " ", str(item.get("label", "")).lower()).strip()
-            for item in (column.get("top_values") or [])
+            for item in normalize_top_values(column.get("top_values"))
         }
         narrative_terms = {"narrative", "reason", "purpose", "explanation", "comment", "description", "situation", "request"}
         if semantic_type == "text" or any(term in f"{name} {description}" for term in narrative_terms):
@@ -879,7 +893,7 @@ class QuerySkill:
             and (
                 "approval" in normalize(column.get("name", ""))
                 or {"approved", "rejected"}.issubset(
-                    {normalize(str(item.get("label", ""))) for item in (column.get("top_values", []) or [])}
+                    {normalize(str(item.get("label", ""))) for item in normalize_top_values(column.get("top_values"))}
                 )
             )
         }
@@ -1172,6 +1186,10 @@ class QuerySkill:
             evidence_note = str(plan.get("evidence_note", "Generated a model-assisted SQL query.")).strip()
             if not sql or not self._queries_dataset(sql):
                 return None
+            if not self.aggregation_skill.validate_query(
+                sql, self._aggregation_contract(dataset)
+            )[0]:
+                return None
 
             result = self.tools.execute_dataset_sql(dataset["project_id"], dataset["id"], sql)
             data = result["data"]
@@ -1195,6 +1213,7 @@ class QuerySkill:
 
     def _sql_planning_prompt(self, message: str, dataset: dict[str, Any]) -> str:
         profile_context = self._compact_profile_context(dataset["profile"])
+        grain_context = self.aggregation_skill.prompt_context(self._aggregation_contract(dataset))
         return (
             "You are the QuerySkill for Data-Berge OS.\n"
             "This is the query-and-analysis skill used by the DataAnalystAgent.\n"
@@ -1216,15 +1235,53 @@ class QuerySkill:
             "- If the user asks for highest/most common reason by outcome/status/class, rank reason counts inside each outcome/status using a WITH query and row_number().\n"
             "- Do not reduce multi-concept questions to one-column counts; include each requested concept in the SQL.\n"
             "- Prefer concise aggregate queries over raw previews.\n"
+            "- Never combine aggregate rows with their child rows; obey the aggregation grain context.\n"
             "- Use exact column names and quote identifiers with double quotes when needed.\n"
             "- Return JSON only, no markdown.\n\n"
             f"Dataset name: {dataset['name']}\n"
             f"Rows: {dataset['row_count']}\n"
             f"Profile context JSON: {json.dumps(profile_context, ensure_ascii=False)}\n"
+            f"Aggregation grain context: {grain_context}\n"
             f"Question: {message}\n\n"
             "JSON schema:\n"
             '{"sql":"select ... from dataset","evidence_note":"What this query calculates","answer":"Optional short plain-English expectation"}'
         )
+
+    def _aggregation_contract(self, dataset: dict[str, Any]) -> dict[str, Any]:
+        cache_key = str(dataset.get("id") or dataset.get("dataset_id") or "")
+        if cache_key and cache_key in self._grain_contract_cache:
+            return self._grain_contract_cache[cache_key]
+
+        profile = get_flat_profile(dataset.get("profile", {}))
+        observed: dict[str, list[Any]] = {}
+        for column in profile.get("columns", [])[:30]:
+            if not isinstance(column, dict) or not column.get("name"):
+                continue
+            semantic_type = str(column.get("semantic_type", "")).casefold()
+            role = str(column.get("engineering_role", "")).casefold()
+            unique_count = column.get("unique_count")
+            if semantic_type not in {"categorical", "text", "string"} and role not in {"dimension", "category", "segment"}:
+                continue
+            if isinstance(unique_count, (int, float)) and unique_count > 500:
+                continue
+            name = str(column["name"])
+            ident = self._quote_ident(name)
+            try:
+                result = self.tools.execute_dataset_sql(
+                    str(dataset.get("project_id", "")),
+                    str(dataset.get("id", "")),
+                    f"SELECT DISTINCT {ident} AS member FROM dataset WHERE {ident} IS NOT NULL LIMIT 501",
+                    limit=501,
+                )
+                values = [row.get("member") for row in result.get("data", []) if isinstance(row, dict)]
+                if len(values) <= 500:
+                    observed[name] = values
+            except Exception:
+                continue
+        contract = self.aggregation_skill.analyze(dataset, observed)
+        if cache_key:
+            self._grain_contract_cache[cache_key] = contract
+        return contract
 
     def _non_analytics_response(self, message: str) -> dict[str, Any] | None:
         normalized = re.sub(r"[^a-z0-9]+", " ", message.lower()).strip()

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Database, Loader } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Database, Download, Loader, X } from 'lucide-react';
 import {
   connectOpenDOSMDataset,
   getOpenDOSMTaskStatus,
@@ -13,6 +13,8 @@ type Props = {
 };
 
 const POLL_INTERVAL_MS = 3000;
+type DownloadState = 'starting' | 'downloading' | 'completed' | 'failed';
+type DownloadNotice = { datasetName: string; state: DownloadState; message: string };
 
 export function OpenDOSMPanel({ projectId, onConnected }: Props) {
   const [datasets, setDatasets] = useState<OpenDOSMDataset[]>([]);
@@ -20,7 +22,10 @@ export function OpenDOSMPanel({ projectId, onConnected }: Props) {
   const [connecting, setConnecting] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<DownloadNotice | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollErrorsRef = useRef(0);
 
   useEffect(() => {
     listOpenDOSMDatasets()
@@ -33,51 +38,76 @@ export function OpenDOSMPanel({ projectId, onConnected }: Props) {
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (completionTimerRef.current) clearTimeout(completionTimerRef.current);
     };
   }, []);
 
-  const startPolling = (taskId: string) => {
+  const startPolling = (taskId: string, datasetName: string) => {
     setStatusMsg('Downloading dataset...');
+    pollErrorsRef.current = 0;
+    setDownloadNotice({ datasetName, state: 'downloading', message: 'Downloading and preparing the dataset...' });
     timerRef.current = setInterval(async () => {
       try {
         const result = await getOpenDOSMTaskStatus(taskId);
+        pollErrorsRef.current = 0;
 
         if (result.status === 'completed') {
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
           setConnecting(null);
           setStatusMsg(null);
-          if (result.schema) {
-            onConnected(result.schema.id);
-          } else if (result.dataset) {
-            onConnected(result.dataset.id);
+          setDownloadNotice({ datasetName, state: 'completed', message: result.message || 'Download complete.' });
+          const connectedId = result.schema?.id || result.dataset?.id;
+          if (connectedId) {
+            completionTimerRef.current = setTimeout(() => onConnected(connectedId), 1200);
           }
         } else if (result.status === 'failed') {
           if (timerRef.current) clearInterval(timerRef.current);
           timerRef.current = null;
           setConnecting(null);
           setStatusMsg(null);
-          setError(result.message || 'Download failed');
+          const message = result.message || 'Download failed';
+          setError(message);
+          setDownloadNotice({ datasetName, state: 'failed', message });
         } else {
-          setStatusMsg(result.message || 'Downloading...');
+          const message = result.message || 'Downloading...';
+          setStatusMsg(message);
+          setDownloadNotice({
+            datasetName,
+            state: result.status === 'pending' ? 'starting' : 'downloading',
+            message,
+          });
         }
       } catch {
-        // poll error, keep trying
+        pollErrorsRef.current += 1;
+        if (pollErrorsRef.current >= 5) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          timerRef.current = null;
+          setConnecting(null);
+          setStatusMsg(null);
+          const message = 'Could not retrieve the download status. Please try again.';
+          setError(message);
+          setDownloadNotice({ datasetName, state: 'failed', message });
+        }
       }
     }, POLL_INTERVAL_MS);
   };
 
   const handleConnect = async (dsId: string) => {
+    const datasetName = datasets.find((dataset) => dataset.id === dsId)?.name || dsId;
     setConnecting(dsId);
     setError(null);
     setStatusMsg('Starting...');
+    setDownloadNotice({ datasetName, state: 'starting', message: 'Starting OpenDOSM download...' });
     try {
       const { task_id } = await connectOpenDOSMDataset(dsId, projectId);
-      startPolling(task_id);
+      startPolling(task_id, datasetName);
     } catch (err) {
       setConnecting(null);
       setStatusMsg(null);
-      setError(err instanceof Error ? err.message : 'Connection failed');
+      const message = err instanceof Error ? err.message : 'Connection failed';
+      setError(message);
+      setDownloadNotice({ datasetName, state: 'failed', message });
     }
   };
 
@@ -100,6 +130,12 @@ export function OpenDOSMPanel({ projectId, onConnected }: Props) {
 
   return (
     <div className="opendosm-panel">
+      {downloadNotice && (
+        <OpenDOSMDownloadNotice
+          notice={downloadNotice}
+          onClose={() => setDownloadNotice(null)}
+        />
+      )}
       <div className="opendosm-panel-head">
         <span className="opendosm-mark">
           <Database size={18} />
@@ -158,5 +194,40 @@ export function OpenDOSMPanel({ projectId, onConnected }: Props) {
         ))}
       </div>
     </div>
+  );
+}
+
+function OpenDOSMDownloadNotice({ notice, onClose }: { notice: DownloadNotice; onClose: () => void }) {
+  const running = notice.state === 'starting' || notice.state === 'downloading';
+  const Icon = notice.state === 'completed' ? CheckCircle2 : notice.state === 'failed' ? AlertCircle : Download;
+  const label = notice.state === 'starting'
+    ? 'Preparing download'
+    : notice.state === 'downloading'
+      ? 'Downloading'
+      : notice.state === 'completed'
+        ? 'Download complete'
+        : 'Download failed';
+
+  return (
+    <aside
+      className={`opendosm-download-popup ${notice.state}`}
+      role={notice.state === 'failed' ? 'alert' : 'status'}
+      aria-live={notice.state === 'failed' ? 'assertive' : 'polite'}
+    >
+      <div className="opendosm-download-head">
+        <span className="opendosm-download-icon"><Icon size={16} /></span>
+        <div>
+          <strong>{label}</strong>
+          <span>{notice.datasetName}</span>
+        </div>
+        {!running && (
+          <button type="button" onClick={onClose} title="Close" aria-label="Close download status">
+            <X size={15} />
+          </button>
+        )}
+      </div>
+      <div className="opendosm-download-track" aria-hidden="true"><span /></div>
+      <p>{notice.message}</p>
+    </aside>
   );
 }

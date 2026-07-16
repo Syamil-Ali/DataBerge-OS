@@ -7578,6 +7578,113 @@ button {
   font-weight: 650;
 }
 
+.opendosm-download-popup {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 220;
+  width: min(390px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid #dbe5ea;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.2);
+}
+
+.opendosm-download-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.opendosm-download-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #e8f6f8;
+  color: #087f95;
+}
+
+.opendosm-download-head div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.opendosm-download-head strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.opendosm-download-head div > span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opendosm-download-head button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+}
+
+.opendosm-download-head button:hover { background: #f1f5f9; color: #0f172a; }
+
+.opendosm-download-track {
+  height: 5px;
+  margin-top: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.opendosm-download-track span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: #0891b2;
+  animation: opendosm-download-progress 1.25s ease-in-out infinite;
+}
+
+.opendosm-download-popup.completed { border-color: #bbf7d0; }
+.opendosm-download-popup.completed .opendosm-download-icon { background: #dcfce7; color: #15803d; }
+.opendosm-download-popup.completed .opendosm-download-track span { width: 100%; background: #22c55e; animation: none; }
+.opendosm-download-popup.failed { border-color: #fecaca; }
+.opendosm-download-popup.failed .opendosm-download-icon { background: #fee2e2; color: #dc2626; }
+.opendosm-download-popup.failed .opendosm-download-track span { width: 100%; background: #ef4444; animation: none; }
+
+.opendosm-download-popup p {
+  margin: 9px 0 0;
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+@keyframes opendosm-download-progress {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(75%); }
+  100% { transform: translateX(240%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opendosm-download-track span { animation: none; width: 65%; }
+}
+
+@media (max-width: 640px) {
+  .opendosm-download-popup { right: 16px; bottom: 16px; }
+}
+
 @media (max-width: 980px) {
   .opendosm-dataset-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7610,7 +7717,7 @@ button {
 
 /* Keep the relationship canvas aligned with the bottom of the app sidebar. */
 .rel-editor.relationship-mode {
-  height: calc(100vh - 52px);
+  height: max(980px, calc(100vh - 52px));
   min-height: 0;
   overflow: hidden;
 }
@@ -7946,6 +8053,7 @@ button {
 .rel-btn-add-inline {
   width: calc(100% - 24px);
   min-height: 34px;
+  flex: 0 0 auto;
   justify-content: center;
   margin: 12px;
 }
@@ -8129,9 +8237,15 @@ button {
 
 .rel-model-tables {
   min-height: 0;
-  overflow: auto;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  align-content: start;
+  align-items: start;
   gap: 10px;
   min-width: 0;
   padding: 10px;
@@ -8148,6 +8262,7 @@ button {
 
 .rel-model-table {
   min-width: 0;
+  align-self: start;
   border: 1px solid #dbeafe;
   border-radius: 8px;
   background: #ffffff;
@@ -8192,11 +8307,34 @@ button {
 }
 
 .rel-model-columns {
-  max-height: 230px;
-  overflow: auto;
+  height: 132px;
+  max-height: 132px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 6px;
   display: grid;
   gap: 2px;
+}
+
+.rel-model-columns::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rel-model-columns::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #eef2f7;
+}
+
+.rel-model-columns::-webkit-scrollbar-thumb {
+  border: 2px solid #eef2f7;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.rel-model-columns::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .rel-model-column {
@@ -8258,6 +8396,9 @@ button {
 .rel-model-flow {
   position: static;
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
@@ -8265,9 +8406,19 @@ button {
 }
 
 .rel-editor.relationship-mode .rel-model-flow {
-  max-height: 42%;
-  overflow: auto;
+  min-height: 360px;
+  max-height: 54%;
+  overflow: hidden;
   flex: 0 1 auto;
+}
+
+.rel-model-flow-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .rel-model-flow-head {
@@ -8523,15 +8674,18 @@ button {
 }
 
 .data-preview-actions label {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .data-preview-actions label span {
+  flex: 0 0 auto;
   color: #64748b;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .data-preview-actions select {
@@ -8588,7 +8742,7 @@ button {
 .data-preview-row-index {
   position: sticky;
   left: 0;
-  z-index: 3;
+  z-index: 1;
   min-width: 48px !important;
   max-width: 48px !important;
   width: 48px;
@@ -8596,6 +8750,17 @@ button {
   color: #94a3b8 !important;
   text-align: right !important;
   font-weight: 700;
+}
+
+.data-preview-table thead .data-preview-row-index {
+  top: 0;
+  z-index: 4;
+  background: #f8fafc;
+}
+
+.data-preview-table tbody .data-preview-row-index {
+  z-index: 1;
+  background: #f8fafc;
 }
 
 .data-preview-column-head {
@@ -9217,6 +9382,10 @@ button {
 
   .rel-editor.relationship-mode .rel-model-flow {
     max-height: none;
+    overflow: visible;
+  }
+
+  .rel-model-flow-scroll {
     overflow: visible;
   }
 

@@ -12,6 +12,16 @@ export function formatValue(value: unknown, maximumFractionDigits = 2) {
   return JSON.stringify(value);
 }
 
+export function formatPValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '-';
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) return '-';
+  if (numeric === 0) return '< 0.0001';
+  if (numeric < 0.0001) return numeric.toExponential(2);
+  if (numeric > 0.9999 && numeric < 1) return numeric.toFixed(6);
+  return numeric.toFixed(4);
+}
+
 export function formatText(value: unknown, fallback = ''): string {
   if (value === null || value === undefined || value === '') return fallback;
   if (typeof value === 'string') return value;

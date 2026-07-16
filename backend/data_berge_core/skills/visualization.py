@@ -6,7 +6,7 @@ from typing import Any
 
 from data_berge_core.contracts import ArtifactStore, ProfileProvider, QueryRunner
 from data_berge_core.runtime import AgentFactory, AgentSpec, ToolkitFactory
-from data_berge_core.contracts import get_flat_profile
+from data_berge_core.contracts import get_flat_profile, normalize_top_values
 
 
 class VisualizationSkill:
@@ -180,7 +180,7 @@ class VisualizationSkill:
                 return {"title": f"Distribution of {name}", "type": "table", "columns": ["bucket", "count"], "data": data}
             return {"title": f"Distribution of {name}", "type": "bar", "x": "bucket", "y": ["count"], "data": data}
         if column.get("top_values"):
-            data = column["top_values"]
+            data = normalize_top_values(column.get("top_values"))
             if chart_type == "table":
                 return {"title": f"Top values: {name}", "type": "table", "columns": ["label", "count"], "data": data}
             return {
@@ -271,7 +271,7 @@ class VisualizationSkill:
                 "semantic_type": col.get("semantic_type"),
             }
             if col.get("top_values"):
-                entry["top_values"] = col["top_values"][:3]
+                entry["top_values"] = normalize_top_values(col.get("top_values"))[:3]
             if col.get("histogram"):
                 entry["has_histogram"] = True
             columns.append(entry)
@@ -326,7 +326,7 @@ class VisualizationSkill:
                     return {"title": f"Distribution of {name}", "type": "table", "columns": ["bucket", "count"], "data": data}
                 return {"title": f"Distribution of {name}", "type": "bar", "x": "bucket", "y": ["count"], "data": data}
             if column.get("top_values"):
-                data = column["top_values"]
+                data = normalize_top_values(column.get("top_values"))
                 if requested_type == "table":
                     return {"title": f"Top values: {name}", "type": "table", "columns": ["label", "count"], "data": data}
                 return {
@@ -353,7 +353,7 @@ class VisualizationSkill:
         normalized_name = normalize_name(name)
         if normalized_name and normalized_name in normalized_message:
             return True
-        for item in column.get("top_values") or []:
+        for item in normalize_top_values(column.get("top_values")):
             label = normalize_name(str(item.get("label") or ""))
             if label and label in normalized_message:
                 return True

@@ -6,6 +6,8 @@ from typing import Any
 
 import pandas as pd
 
+from data_berge_core.contracts import normalize_top_values
+
 
 NULL_LIKE_MARKERS = {"", "-", "--", "na", "n/a", "nan", "none", "null", "unknown", "missing"}
 DATA_ENGINEERING_CONTRACT_VERSION = 2
@@ -24,7 +26,7 @@ def infer_engineering_role(column: dict[str, Any], series: pd.Series, row_count:
     combined_tokens = set(combined.split())
     declared_match = re.match(r"\s*\[([^\]]+)\]", str(column.get("description") or ""))
     declared_type = normalize_text(declared_match.group(1)) if declared_match else ""
-    top_values = {normalize_text(str(item.get("label", ""))) for item in (column.get("top_values") or [])}
+    top_values = {normalize_text(str(item.get("label", ""))) for item in normalize_top_values(column.get("top_values"))}
 
     if (
         semantic_type == "datetime"

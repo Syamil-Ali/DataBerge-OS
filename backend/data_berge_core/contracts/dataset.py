@@ -20,6 +20,18 @@ def get_flat_profile(profile: dict[str, Any]) -> dict[str, Any]:
     return profile
 
 
+def normalize_top_values(value: Any) -> list[dict[str, Any]]:
+    """Return profile top values in the canonical [{label, count}] shape."""
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if isinstance(value, dict):
+        return [
+            {"label": str(label), "count": count}
+            for label, count in value.items()
+        ]
+    return []
+
+
 @dataclass
 class DatasetContext:
     dataset_id: str

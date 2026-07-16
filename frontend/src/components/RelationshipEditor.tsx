@@ -126,78 +126,83 @@ function RelationshipMap({
           <GitBranch size={14} />
           <span>Relationships</span>
         </div>
-        {relationships.length === 0 ? (
-          <div className="rel-model-flow-empty">No relationships yet.</div>
-        ) : (
-          relationships.map((rel, index) => {
-            const key = relationshipKey(rel);
-            const isHighlighted = highlightedRelationshipKeys.has(key);
-            const enabled = activeIndexes.has(index);
-            return (
-              <div
-                className={`rel-model-flow-item ${isHighlighted ? 'highlighted' : ''} ${enabled ? '' : 'disabled'}`}
-                key={`${key}-${index}`}
-                onMouseEnter={() => setHoveredRelationship(key)}
-                onMouseLeave={() => setHoveredRelationship(null)}
-                onClick={() => {
-                  setPinnedColumn(null);
-                  setPinnedRelationship((prev) => (prev === key ? null : key));
-                }}
-              >
-                <div className="rel-flow-endpoints">
-                  <span>{rel.from_table}.{rel.from_column}</span>
-                  <ArrowRight size={13} />
-                  <span>{rel.to_table}.{rel.to_column}</span>
+        <div className="rel-model-flow-scroll">
+          {relationships.length === 0 ? (
+            <div className="rel-model-flow-empty">No relationships yet.</div>
+          ) : (
+            relationships.map((rel, index) => {
+              const key = relationshipKey(rel);
+              const isHighlighted = highlightedRelationshipKeys.has(key);
+              const enabled = activeIndexes.has(index);
+              return (
+                <div
+                  className={`rel-model-flow-item ${isHighlighted ? 'highlighted' : ''} ${enabled ? '' : 'disabled'}`}
+                  key={`${key}-${index}`}
+                  onMouseEnter={() => setHoveredRelationship(key)}
+                  onMouseLeave={() => setHoveredRelationship(null)}
+                  onClick={() => {
+                    setPinnedColumn(null);
+                    setPinnedRelationship((prev) => (prev === key ? null : key));
+                  }}
+                >
+                  <div className="rel-flow-endpoints">
+                    <span>{rel.from_table}.{rel.from_column}</span>
+                    <ArrowRight size={13} />
+                    <span>{rel.to_table}.{rel.to_column}</span>
+                  </div>
+                  <div className="rel-flow-meta">
+                    <select
+                      className="rel-cardinality-select"
+                      value={rel.cardinality ?? 'many_to_one'}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => onCardinalityChange(index, event.target.value as NonNullable<RelationalRelationship['cardinality']>)}
+                    >
+                      <option value="many_to_one">Many-to-one</option>
+                      <option value="one_to_many">One-to-many</option>
+                      <option value="one_to_one">One-to-one</option>
+                      <option value="many_to_many">Many-to-many</option>
+                    </select>
+                    <span>{methodLabel(rel.method)}</span>
+                    <button
+                      className="rel-toggle"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleRelationship(index);
+                      }}
+                      title={enabled ? 'Disable relationship' : 'Enable relationship'}
+                    >
+                      {enabled ? <Link2 size={14} color="#059669" /> : <Link2Off size={14} color="#94a3b8" />}
+                    </button>
+                    <button
+                      className="rel-delete"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteRelationship(index);
+                      }}
+                      title="Remove relationship"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
-                <div className="rel-flow-meta">
-                  <select
-                    className="rel-cardinality-select"
-                    value={rel.cardinality ?? 'many_to_one'}
-                    onClick={(event) => event.stopPropagation()}
-                    onChange={(event) => onCardinalityChange(index, event.target.value as NonNullable<RelationalRelationship['cardinality']>)}
-                  >
-                    <option value="many_to_one">Many-to-one</option>
-                    <option value="one_to_many">One-to-many</option>
-                    <option value="one_to_one">One-to-one</option>
-                    <option value="many_to_many">Many-to-many</option>
-                  </select>
-                  <span>{methodLabel(rel.method)}</span>
-                  <button
-                    className="rel-toggle"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleRelationship(index);
-                    }}
-                    title={enabled ? 'Disable relationship' : 'Enable relationship'}
-                  >
-                    {enabled ? <Link2 size={14} color="#059669" /> : <Link2Off size={14} color="#94a3b8" />}
-                  </button>
-                  <button
-                    className="rel-delete"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onDeleteRelationship(index);
-                    }}
-                    title="Remove relationship"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
         {showAddForm ? (
           <AddRelationshipForm
             tables={tables}
             onAdd={onAddRelationship}
             onCancel={onCancelAdd}
           />
-        ) : (
-          <button className="rel-btn-add rel-btn-add-inline" onClick={onShowAddForm} disabled={tableNames.length < 2}>
-            <Plus size={13} /> Add relationship
-          </button>
-        )}
+        ) : null}
+        <button
+          className="rel-btn-add rel-btn-add-inline"
+          onClick={onShowAddForm}
+          disabled={showAddForm || tableNames.length < 2}
+        >
+          <Plus size={13} /> Add relationship
+        </button>
       </aside>
 
       <div className="rel-model-table-section">
@@ -671,7 +676,8 @@ function DataPreviewEditor({
   const tableNames = useMemo(() => Object.keys(schema.schema.tables), [schema.schema.tables]);
   const [selectedTable, setSelectedTable] = useState(tableNames[0] ?? '');
   const [preview, setPreview] = useState<RelationalTablePreview | null>(null);
-  const [draftColumns, setDraftColumns] = useState<RelationalTable['columns']>([]);
+  const [draftColumnsByTable, setDraftColumnsByTable] = useState<Record<string, RelationalTable['columns']>>({});
+  const [dirtyTables, setDirtyTables] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -682,6 +688,14 @@ function DataPreviewEditor({
   const [replacementValue, setReplacementValue] = useState('');
   const [transforming, setTransforming] = useState(false);
   const [transformMenuColumn, setTransformMenuColumn] = useState<string | null>(null);
+  const draftColumns = draftColumnsByTable[selectedTable] ?? preview?.columns ?? [];
+
+  useEffect(() => {
+    setDraftColumnsByTable({});
+    setDirtyTables(new Set());
+    setPreview(null);
+    setSaved(false);
+  }, [schema.id]);
 
   useEffect(() => {
     if (!tableNames.length) {
@@ -703,7 +717,11 @@ function DataPreviewEditor({
       .then((result) => {
         if (cancelled) return;
         setPreview(result);
-        setDraftColumns(result.columns);
+        setDraftColumnsByTable((current) => (
+          current[selectedTable]
+            ? current
+            : { ...current, [selectedTable]: result.columns }
+        ));
         setTransformColumn((current) => current && result.columns.some((column) => column.name === current) ? current : result.columns[0]?.name ?? '');
       })
       .catch((err) => {
@@ -718,26 +736,41 @@ function DataPreviewEditor({
   }, [projectId, schema.id, schema.updated_at, schema.schema.transformations, selectedTable]);
 
   const updateColumnType = (columnName: string, semanticType: string) => {
-    setDraftColumns((prev) => prev.map((column) => (
-      column.name === columnName ? { ...column, semantic_type: semanticType } : column
-    )));
+    if (!selectedTable) return;
+    setDraftColumnsByTable((current) => ({
+      ...current,
+      [selectedTable]: (current[selectedTable] ?? preview?.columns ?? []).map((column) => (
+        column.name === columnName ? { ...column, semantic_type: semanticType } : column
+      )),
+    }));
+    setDirtyTables((current) => new Set(current).add(selectedTable));
     setSaved(false);
   };
 
   const handleSave = async () => {
-    if (!selectedTable) return;
+    if (!selectedTable || dirtyTables.size === 0) return;
     setSaving(true);
     setError(null);
     try {
+      const tableUpdates = Object.fromEntries(
+        [...dirtyTables]
+          .filter((tableName) => draftColumnsByTable[tableName])
+          .map((tableName) => [tableName, { columns: draftColumnsByTable[tableName] }]),
+      );
       const result = await updateRelationalSchema(projectId, schema.id, {
-        tables: {
-          [selectedTable]: {
-            columns: draftColumns,
-          },
-        },
+        tables: tableUpdates,
       });
-      setPreview((prev) => prev ? { ...prev, columns: draftColumns } : prev);
-      setDraftColumns(result.schema.tables[selectedTable]?.columns ?? draftColumns);
+      setDraftColumnsByTable((current) => {
+        const next = { ...current };
+        for (const tableName of dirtyTables) {
+          next[tableName] = result.schema.tables[tableName]?.columns ?? current[tableName];
+        }
+        return next;
+      });
+      setPreview((current) => current
+        ? { ...current, columns: result.schema.tables[selectedTable]?.columns ?? current.columns }
+        : current);
+      setDirtyTables(new Set());
       setSaved(true);
       onSchemaUpdated?.(result);
     } catch (err) {
@@ -808,9 +841,15 @@ function DataPreviewEditor({
               {tableNames.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           </label>
-          <button className="rel-btn-confirm" onClick={handleSave} disabled={!selectedTable || saving || loading}>
+          <button className="rel-btn-confirm" onClick={handleSave} disabled={!selectedTable || dirtyTables.size === 0 || saving || loading}>
             <Check size={13} />
-            {saving ? 'Saving' : saved ? 'Saved' : 'Apply changes'}
+            {saving
+              ? 'Saving'
+              : saved
+                ? 'Saved'
+                : dirtyTables.size > 1
+                  ? `Apply changes (${dirtyTables.size} tables)`
+                  : 'Apply changes'}
           </button>
         </div>
       </div>
@@ -1130,10 +1169,13 @@ export function RelationshipEditor({
     const nextRelationships = schema.schema.relationships ?? [];
     setRelationships(nextRelationships);
     setEnabledSet(new Set(nextRelationships.map((rel, index) => (rel.active === false ? -1 : index)).filter((index) => index >= 0)));
-    setActiveEditorTab(Object.keys(schema.schema.tables).length > 1 ? 'relationships' : 'preview');
     setSaved(false);
     setSaveError(null);
-  }, [schema.id, schema.schema.relationships, schema.schema.tables]);
+  }, [schema.id, schema.schema.relationships]);
+
+  useEffect(() => {
+    setActiveEditorTab(Object.keys(schema.schema.tables).length > 1 ? 'relationships' : 'preview');
+  }, [schema.id]);
 
   const tables = schema.schema.tables;
   const tableNames = Object.keys(tables);

@@ -5,6 +5,7 @@ from typing import Any
 from app.agents import AnalyticsTeam
 from app.models.schemas import ReportRequest
 from app.services.llm_observability import log_chat_run
+from app.services.llm_usage import merge_usage_payloads, prompt_usage_payloads
 from app.services.report_queue import queue_report_workflow
 from app.storage import database
 from data_berge_core.skills.report_templates import get_block_keys
@@ -38,6 +39,8 @@ def run_chat_workflow(
         )
         if not session:
             raise FileNotFoundError("Chat session not found for this project.")
+        if str(session.get("dataset_id") or "") != str(dataset_id):
+            raise FileNotFoundError("Chat session not found for this dataset.")
         if session and session["title"] == "New Chat":
             if user_id:
                 database.update_chat_session_title_for_user(user_id, project_id, session_id, _auto_title(message))
@@ -89,15 +92,21 @@ def run_chat_workflow(
             elapsed_ms=elapsed_ms,
             error=str(exc),
             session_id=session_id,
+            user_id=user_id,
         )
         raise
     elapsed_ms = int((perf_counter() - started) * 1000)
     prompt_info = response.pop("_prompt_info", None)
     token_usage = response.pop("_token_usage", None)
-    if token_usage and prompt_info is None:
-        prompt_info = {}
-    if token_usage and prompt_info is not None:
-        prompt_info["token_usage"] = token_usage
+    manager_usage = response.pop("_manager_token_usage", None)
+    combined_usage = merge_usage_payloads(
+        manager_usage,
+        token_usage,
+        *prompt_usage_payloads(prompt_info),
+    )
+    if combined_usage:
+        prompt_info = prompt_info or {}
+        prompt_info["token_usage"] = combined_usage
     if user_id:
         assistant_message = database.create_chat_message_for_user(
             user_id,
@@ -130,6 +139,7 @@ def run_chat_workflow(
         elapsed_ms=elapsed_ms,
         prompt_info=prompt_info,
         session_id=session_id,
+        user_id=user_id,
     )
     return response
 

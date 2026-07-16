@@ -18,6 +18,7 @@ import {
 
 import { ChartSpec } from '../types/domain';
 import { formatValue } from '../utils/format';
+import { orderCategoryRows } from '../utils/profile';
 
 const CHART_COLORS = ['#0891b2', '#f97316', '#16a34a', '#7c3aed', '#dc2626', '#0f766e'];
 
@@ -29,7 +30,8 @@ type ChartBlockProps = {
 
 export function ChartBlock({ title, chart, data }: ChartBlockProps) {
   if (!chart || typeof chart !== 'object') return null;
-  const rows = data ?? chart.data ?? [];
+  const rawRows = data ?? chart.data ?? [];
+  const rows = chart.x ? orderCategoryRows(rawRows, chart.x) : rawRows;
   const yKeys = chart.y ?? [];
   if (!rows.length) return null;
 

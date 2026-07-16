@@ -8,7 +8,7 @@ import duckdb
 import pandas as pd
 
 from app.services.files import load_dataframe
-from data_berge_core.contracts import get_flat_profile
+from data_berge_core.contracts import get_flat_profile, normalize_top_values
 
 
 class UnsafeQueryError(ValueError):
@@ -57,7 +57,7 @@ def find_outcome_column(profile: dict[str, Any], preferred_value: str | None = N
         if col.get("semantic_type") != "categorical":
             continue
         name = str(col.get("name", ""))
-        top_values = col.get("top_values", []) or []
+        top_values = normalize_top_values(col.get("top_values"))
         labels = {normalize(str(item.get("label", ""))) for item in top_values}
         if "approval" in normalize(name):
             return name

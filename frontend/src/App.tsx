@@ -10,6 +10,7 @@ import { deleteDataset, deleteRelationalSchema, getOverview, getProjects, getRel
 import { Artifact, ChatAttachment, Dataset, Overview, Project, RelationalSchema, ReportPlan } from './types/domain';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './components/LoginPage';
+import { ConfirmDialog } from './components/ConfirmDialog';
 import {
   addChatAttachment,
   reportAttachment,
@@ -170,6 +171,7 @@ function AuthenticatedApp({
     kind: 'dataset' | 'schema';
     name: string;
   } | null>(null);
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [reviewReturnStep, setReviewReturnStep] = useState<LandingStep>('setup');
   const [pendingReportPlan, setPendingReportPlan] = useState<ReportPlan | null>(null);
@@ -183,6 +185,7 @@ function AuthenticatedApp({
     if (!overview || !selectedDatasetId) return null;
     return overview.datasets.find((dataset) => dataset.id === selectedDatasetId) ?? null;
   }, [overview, selectedDatasetId]);
+  const reports = (overview?.artifacts ?? []).filter((artifact) => artifact.kind === 'report');
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -381,7 +384,6 @@ function AuthenticatedApp({
     await executeDeleteSchema();
   };
 
-  const reports = (overview?.artifacts ?? []).filter((artifact) => artifact.kind === 'report');
   const activeSchema = activeSchemaId
     ? relationalSchemas.find((s) => s.id === activeSchemaId) ?? null
     : null;
@@ -515,6 +517,19 @@ function AuthenticatedApp({
 
   return (
     <div className="app-shell has-data">
+      {signOutDialogOpen && (
+        <ConfirmDialog
+          eyebrow="Confirm sign out"
+          title="Sign out of Data-Berge?"
+          message="You will return to the sign-in page. Your saved projects, datasets, chats, and reports will remain available."
+          confirmLabel="Sign out"
+          onCancel={() => setSignOutDialogOpen(false)}
+          onConfirm={() => {
+            setSignOutDialogOpen(false);
+            onLogout();
+          }}
+        />
+      )}
       {deleteDialog && (
         <div className="app-modal-backdrop" onClick={() => setDeleteDialog(null)}>
           <div className="app-modal" onClick={(event) => event.stopPropagation()}>
@@ -523,8 +538,8 @@ function AuthenticatedApp({
               <h3>{deleteDialog.name}</h3>
               <p>
                 {deleteDialog.kind === 'schema'
-                  ? 'This will remove the active relationship model and its generated dataset artifacts.'
-                  : 'This will remove the active dataset and its generated artifacts.'}
+                  ? 'This will remove the active relationship model and its chat history. Generated reports will be retained.'
+                  : 'This will remove the active dataset and its chat history. Generated reports will be retained.'}
               </p>
             </div>
             <div className="app-modal-actions">
@@ -654,7 +669,12 @@ function AuthenticatedApp({
                 <strong title={userName}>{userName}</strong>
               </div>
             </div>
-            <button className="sidebar-ghost-action" onClick={onLogout} title="Sign out">
+            <button
+              className="sidebar-ghost-action"
+              onClick={() => setSignOutDialogOpen(true)}
+              title="Sign out"
+              aria-label="Sign out"
+            >
               <LogOut size={14} />
             </button>
           </div>

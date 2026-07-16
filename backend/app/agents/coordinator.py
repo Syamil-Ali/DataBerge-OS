@@ -12,6 +12,7 @@ from app.agents.base import AgentSpec, make_agno_agent
 from app.agents.data_analyst import DataAnalystAgent
 from app.agents.data_engineer import DataEngineerAgent
 from app.agents.report import ReportAgent
+from app.services.llm_usage import extract_run_usage
 from data_berge_core.contracts import get_flat_profile
 from data_berge_core.memory import AgentMemory
 
@@ -114,6 +115,7 @@ class TeamCoordinator:
         history: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         history = history or []
+        self._manager_usage: dict[str, Any] = {}
         previous_lead = self._last_lead_from_history(history)
         memory_context = self.memory.get_context_summary(dataset.get("name"))
         decision = self._decide(message, dataset, history, memory_context)
@@ -163,6 +165,8 @@ class TeamCoordinator:
             }
 
         self._record_to_memory(response, dataset)
+        if self._manager_usage:
+            response["_manager_token_usage"] = self._manager_usage
         return response
 
     def _decide(
@@ -191,6 +195,7 @@ class TeamCoordinator:
                 self._manager_prompt(message, dataset, history, memory_context),
                 stream=False,
             )
+            self._manager_usage = extract_run_usage(run_output)
             decision = self._parse_decision(getattr(run_output, "content", None))
             if decision and (decision.action == "respond" or decision.assignments):
                 return decision

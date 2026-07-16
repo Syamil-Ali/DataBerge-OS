@@ -34,6 +34,11 @@ import {
   type ReportTypeDraft,
 } from './report/reportConfig';
 import { FullReportModal, isReportGenerating, ReportLibraryRow } from './report/ReportReader';
+import { ConfirmDialog } from './ConfirmDialog';
+
+type DeleteTarget =
+  | { kind: 'report'; artifact: Artifact }
+  | { kind: 'report_type'; reportType: CustomReportType };
 
 type ReportBuilderProps = {
   project: Project | null;
@@ -66,6 +71,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
   const [typeError, setTypeError] = useState<string | null>(null);
   const [sendBusy, setSendBusy] = useState<string | null>(null);
   const [returnToChatOnClose, setReturnToChatOnClose] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
   const hasGeneratingReports = reports.some(isReportGenerating);
   const activeCustomType = customTypes.find((reportType) => selectedType === `custom:${reportType.id}`) || null;
@@ -203,7 +209,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
   };
 
   const removeReportType = async (reportType: CustomReportType) => {
-    if (!project || !window.confirm(`Delete ${reportType.name}?`)) return;
+    if (!project) return;
     setTypeBusy(true);
     try {
       await deleteCustomReportType(project.id, reportType.id);
@@ -259,7 +265,6 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
 
   const deleteReport = async (artifact: Artifact) => {
     if (!project || actionBusy) return;
-    if (!window.confirm(`Delete "${artifact.title}"? This cannot be undone.`)) return;
     setActionBusy(artifact.id);
     try {
       await deleteArtifact(project.id, artifact.id);
@@ -270,6 +275,17 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
     } finally {
       setActionBusy(null);
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    if (target.kind === 'report') {
+      await deleteReport(target.artifact);
+    } else {
+      await removeReportType(target.reportType);
+    }
+    setDeleteTarget(null);
   };
 
   const closeOpenReport = () => {
@@ -394,7 +410,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
                   setReturnToChatOnClose(false);
                   setOpenReport(report);
                 }}
-                onDelete={() => deleteReport(report)}
+                onDelete={() => setDeleteTarget({ kind: 'report', artifact: report })}
                 onSendToChat={onSendToChat ? () => sendReportToChat(report) : undefined}
                 sendBusy={sendBusy === report.id}
               />
@@ -413,7 +429,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
         <FullReportModal
           report={openReport}
           onClose={closeOpenReport}
-          onDelete={() => deleteReport(openReport)}
+          onDelete={() => setDeleteTarget({ kind: 'report', artifact: openReport })}
           onSendToChat={onSendToChat ? () => sendReportToChat(openReport) : undefined}
           sendBusy={sendBusy === openReport.id}
         />
@@ -429,7 +445,21 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
           error={typeError}
           onClose={() => setTypeEditorOpen(false)}
           onSave={saveReportType}
-          onDelete={editingType ? () => removeReportType(editingType) : undefined}
+          onDelete={editingType ? () => setDeleteTarget({ kind: 'report_type', reportType: editingType }) : undefined}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          eyebrow="Confirm delete"
+          title={deleteTarget.kind === 'report' ? deleteTarget.artifact.title : deleteTarget.reportType.name}
+          message={deleteTarget.kind === 'report'
+            ? 'This report will be permanently removed. This action cannot be undone.'
+            : 'This custom report type will be permanently removed. Existing generated reports will not be deleted.'}
+          busy={deleteTarget.kind === 'report' ? actionBusy === deleteTarget.artifact.id : typeBusy}
+          busyLabel="Deleting..."
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
         />
       )}
     </section>

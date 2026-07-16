@@ -304,7 +304,10 @@ def delete_dataset(project_id: str, dataset_id: str) -> dict[str, Any] | None:
     with connect() as conn:
         conn.execute("delete from chat_messages where project_id = ? and dataset_id = ?", (project_id, dataset_id))
         conn.execute("delete from chat_sessions where project_id = ? and dataset_id = ?", (project_id, dataset_id))
-        conn.execute("delete from artifacts where project_id = ? and dataset_id = ?", (project_id, dataset_id))
+        conn.execute(
+            "delete from artifacts where project_id = ? and dataset_id = ? and kind <> 'report'",
+            (project_id, dataset_id),
+        )
         conn.execute("delete from datasets where project_id = ? and id = ?", (project_id, dataset_id))
         conn.execute("update projects set updated_at = ? where id = ?", (ts, project_id))
     return dataset
@@ -325,7 +328,7 @@ def delete_dataset_for_user(user_id: str, project_id: str, dataset_id: str) -> d
             (project_id, dataset_id, user_id),
         )
         conn.execute(
-            "delete from artifacts where project_id = ? and dataset_id = ? and user_id = ?",
+            "delete from artifacts where project_id = ? and dataset_id = ? and user_id = ? and kind <> 'report'",
             (project_id, dataset_id, user_id),
         )
         conn.execute(

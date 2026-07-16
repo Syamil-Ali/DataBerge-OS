@@ -9,6 +9,9 @@ from app.services import opendosm
 
 
 class OpenDOSMTests(unittest.TestCase):
+    def test_data_catalogue_uses_the_current_official_api_route(self) -> None:
+        self.assertEqual(opendosm.BASE_URL, "https://api.data.gov.my/data-catalogue")
+
     def test_parse_catalogue_page_extracts_all_nested_entries(self) -> None:
         payload = {
             "props": {
