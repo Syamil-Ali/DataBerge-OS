@@ -22,6 +22,8 @@ class LoginRequest(BaseModel):
 
 @router.post("/register")
 def register(req: RegisterRequest):
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Name is required")
     if len(req.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     existing = get_user_by_email(req.email.strip().lower())

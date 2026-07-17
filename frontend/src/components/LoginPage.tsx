@@ -16,7 +16,9 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -28,12 +30,22 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
   const selectMode = (nextMode: AuthMode) => {
     setMode(nextMode);
     setError('');
+    setConfirmPassword('');
+    setShowConfirmPassword(false);
     onModeChange?.(nextMode);
   };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (mode === 'register' && !name.trim()) {
+      setError('Enter your name.');
+      return;
+    }
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
     setBusy(true);
     try {
       if (mode === 'register') {
@@ -127,6 +139,30 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
               </button>
             </div>
           </label>
+          {mode === 'register' && (
+            <label>
+              <span>Re-enter password</span>
+              <div className="auth-password-field">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Enter your password again"
+                  minLength={6}
+                  required
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}
+                  aria-pressed={showConfirmPassword}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+          )}
           <button type="submit" className="auth-submit" disabled={busy}>
             {busy ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </button>

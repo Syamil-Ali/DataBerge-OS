@@ -138,7 +138,7 @@ function AppShell({ route, navigate }: { route: AppRoute; navigate: (route: AppR
       navigate={navigate}
       onLogout={() => {
         logout();
-        navigate('login', { replace: true });
+        navigate('main', { replace: true });
       }}
       userName={user.name}
     />
@@ -521,7 +521,7 @@ function AuthenticatedApp({
         <ConfirmDialog
           eyebrow="Confirm sign out"
           title="Sign out of Data-Berge?"
-          message="You will return to the sign-in page. Your saved projects, datasets, chats, and reports will remain available."
+          message="You will return to the landing page. Your saved projects, datasets, chats, and reports will remain available."
           confirmLabel="Sign out"
           onCancel={() => setSignOutDialogOpen(false)}
           onConfirm={() => {
