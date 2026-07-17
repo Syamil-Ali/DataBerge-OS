@@ -277,7 +277,7 @@ export function LandingPage({
             <button onClick={() => document.getElementById('showcase-sources')?.scrollIntoView({ behavior: 'smooth' })}>Sources</button>
             <button onClick={() => document.getElementById('showcase-proof')?.scrollIntoView({ behavior: 'smooth' })}>Results</button>
           </nav>
-          <div>
+          <div className="showcase-auth-actions">
             <button className="showcase-login" onClick={openLogin}>Log in</button>
             <button className="showcase-signup" onClick={openSignUp}>Create account</button>
           </div>

@@ -6060,6 +6060,12 @@ button {
   gap: 9px;
 }
 
+.showcase-auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .showcase-login,
 .showcase-signup {
   min-height: 38px;
