@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import asdict, dataclass
@@ -15,6 +16,9 @@ from app.agents.report import ReportAgent
 from app.services.llm_usage import extract_run_usage
 from data_berge_core.contracts import get_flat_profile
 from data_berge_core.memory import AgentMemory
+
+
+logger = logging.getLogger(__name__)
 
 
 AgentName = Literal["data_analyst", "data_engineer", "report_agent"]
@@ -104,8 +108,6 @@ class TeamCoordinator:
         self.manager_agent = manager_agent or make_agno_agent(
             self.manager_spec,
             model_options={"temperature": 0.0},
-            output_schema=ManagerDecision,
-            structured_outputs=True,
         )
 
     def respond(
@@ -116,6 +118,7 @@ class TeamCoordinator:
     ) -> dict[str, Any]:
         history = history or []
         self._manager_usage: dict[str, Any] = {}
+        self._manager_fallback_reason: dict[str, str] | None = None
         previous_lead = self._last_lead_from_history(history)
         memory_context = self.memory.get_context_summary(dataset.get("name"))
         decision = self._decide(message, dataset, history, memory_context)
@@ -156,6 +159,8 @@ class TeamCoordinator:
             "assignments": [assignment.model_dump() for assignment in assignments],
             "rationale": decision.rationale,
         }
+        if self._manager_fallback_reason:
+            response["orchestration"]["fallback"] = self._manager_fallback_reason
 
         if previous_lead and previous_lead != lead:
             response["handoff"] = {
@@ -188,6 +193,10 @@ class TeamCoordinator:
                 confidence=0.98,
             )
         if not hasattr(self.manager_agent, "run"):
+            self._manager_fallback_reason = {
+                "stage": "manager_initialization",
+                "error_type": "ManagerAgentUnavailable",
+            }
             return self._fallback_decision(message, dataset, history)
 
         try:
@@ -199,8 +208,16 @@ class TeamCoordinator:
             decision = self._parse_decision(getattr(run_output, "content", None))
             if decision and (decision.action == "respond" or decision.assignments):
                 return decision
-        except Exception:
-            pass
+            self._manager_fallback_reason = {
+                "stage": "manager_response_validation",
+                "error_type": "InvalidManagerDecision",
+            }
+        except Exception as exc:
+            self._manager_fallback_reason = {
+                "stage": "manager_provider_call",
+                "error_type": type(exc).__name__,
+            }
+            logger.warning("Team manager model call failed: %s", type(exc).__name__, exc_info=True)
         return self._fallback_decision(message, dataset, history)
 
     def _manager_prompt(
@@ -249,7 +266,14 @@ class TeamCoordinator:
             f"Dataset routing context: {json.dumps(context, ensure_ascii=False)}\n"
             f"Relevant team memory: {memory_context[:1200] or 'None'}\n"
             f"Recent conversation: {json.dumps(recent_history, ensure_ascii=False)}\n"
-            f"User message: {message}\n"
+            f"User message: {message}\n\n"
+            "Return exactly one JSON object and no markdown. Use this shape:\n"
+            '{"action":"respond|delegate","response":"direct reply when action is respond",'
+            '"intent":"short intent","focus":"short focus","assignments":['
+            '{"agent":"data_analyst|data_engineer|report_agent","task":"specific task",'
+            '"skill":"intake|profiling|query|visualization|reporting|engineering"}],'
+            '"rationale":"brief routing reason","confidence":0.0}\n'
+            "For action=respond, assignments must be empty. For action=delegate, response should be empty.\n"
         )
 
     def _dataset_routing_context(self, dataset: dict[str, Any]) -> dict[str, Any]:
@@ -308,6 +332,17 @@ class TeamCoordinator:
         dataset: dict[str, Any],
         history: list[dict[str, Any]],
     ) -> ManagerDecision:
+        conversational_response = self._fallback_conversation_response(message)
+        if conversational_response:
+            return ManagerDecision(
+                action="respond",
+                response=conversational_response,
+                intent="conversation",
+                focus="greeting",
+                assignments=[],
+                rationale="The manager safety fallback handled a conversational message without invoking a dataset specialist.",
+                confidence=0.9,
+            )
         query_skill = getattr(self.data_analyst, "query_skill", None)
         can_answer_directly = getattr(query_skill, "can_answer_without_model", None)
         skill = self.data_analyst._select_skill(message, dataset, history)
@@ -324,9 +359,23 @@ class TeamCoordinator:
             intent=skill,
             focus=skill,
             assignments=[assignment],
-            rationale="The manager model was unavailable, so the request was sent to the closest role agent.",
+            rationale="The manager safety fallback selected the closest role agent.",
             confidence=0.5,
         )
+
+    @staticmethod
+    def _fallback_conversation_response(message: str) -> str | None:
+        """Keep obvious social turns out of specialist agents if manager inference fails."""
+        normalized = re.sub(r"[^a-z0-9]+", " ", message.casefold()).strip()
+        if not normalized:
+            return "Hi! What would you like to explore in this dataset?"
+        if re.fullmatch(r"(?:hey+|hi+|hello|helo|salam|assalamualaikum)(?: there)?", normalized):
+            return "Hi! What would you like to explore in this dataset?"
+        if re.search(r"\b(?:say|speak|reply|respond)\s+(?:hi+|hello|hey+)\b", normalized):
+            return "Hi!"
+        if re.fullmatch(r"(?:thanks|thank you|thankyou|tq|terima kasih)(?: so much)?", normalized):
+            return "You're welcome. What would you like to explore next?"
+        return None
 
     def _execute_assignment(
         self,

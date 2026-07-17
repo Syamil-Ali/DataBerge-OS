@@ -48,6 +48,11 @@ class FakeManager:
         return SimpleNamespace(content=self.decision)
 
 
+class FailingManager:
+    def run(self, prompt: str, stream: bool = False) -> SimpleNamespace:
+        raise RuntimeError("provider unavailable")
+
+
 class FakeAnalyst:
     skill_names = ["intake", "profiling", "query", "visualization", "reporting"]
 
@@ -128,6 +133,34 @@ class AgenticCoordinatorTests(unittest.TestCase):
         self.assertEqual(response["answer"], "Hey. What would you like to explore?")
         self.assertEqual(response["lead_agent"], "team_manager")
         self.assertEqual(response["orchestration"]["assignments"], [])
+
+    def test_manager_failure_keeps_greeting_out_of_analyst(self) -> None:
+        coordinator = coordinator_with(
+            ManagerDecision(action="respond", response="unused"),
+            self.query,
+        )
+        coordinator.manager_agent = FailingManager()
+
+        response = coordinator.respond("hey", self.dataset, [])
+
+        self.assertEqual(response["lead_agent"], "team_manager")
+        self.assertEqual(response["orchestration"]["action"], "respond")
+        self.assertEqual(response["orchestration"]["assignments"], [])
+        self.assertEqual(
+            response["orchestration"]["fallback"]["error_type"],
+            "RuntimeError",
+        )
+
+    def test_manager_prompt_requests_parseable_json(self) -> None:
+        coordinator = coordinator_with(
+            ManagerDecision(action="respond", response="unused"),
+            self.query,
+        )
+
+        prompt = coordinator._manager_prompt("hey", self.dataset, [], "")
+
+        self.assertIn("Return exactly one JSON object", prompt)
+        self.assertIn('"action":"respond|delegate"', prompt)
 
     def test_manager_decision_can_be_parsed_from_json(self) -> None:
         coordinator = TeamCoordinator.__new__(TeamCoordinator)

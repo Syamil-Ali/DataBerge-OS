@@ -418,6 +418,8 @@ def log_chat_run(
         rendered_prompt = prompt_info.get("rendered_prompt")
         usage_payload = prompt_info.get("token_usage") or response.get("_token_usage") or {}
         prompt_payload = _prompt_audit_payload(prompt_info)
+        orchestration = response.get("orchestration") if isinstance(response.get("orchestration"), dict) else {}
+        manager_fallback = orchestration.get("fallback") if isinstance(orchestration.get("fallback"), dict) else None
 
         request_payload: dict[str, Any] = {
             "question": message,
@@ -482,7 +484,13 @@ def log_chat_run(
             "active_skill": str(response.get("active_skill") or ""),
             "handoff": str(bool(response.get("handoff"))).lower(),
             "assignment_count": str(len((response.get("orchestration") or {}).get("assignments", []) or [])),
+            "manager_fallback_used": str(bool(manager_fallback)).lower(),
         }
+        if manager_fallback:
+            trace_metadata.update({
+                "manager_failure_stage": str(manager_fallback.get("stage") or "unknown"),
+                "manager_error_type": str(manager_fallback.get("error_type") or "UnknownManagerError"),
+            })
         relational_schema = (dataset.get("profile", {}) or {}).get("relational_schema", {})
         if isinstance(relational_schema, dict) and relational_schema:
             trace_metadata.update({
@@ -521,6 +529,7 @@ def log_chat_run(
             "lead_agent": str(response.get("lead_agent") or response.get("handled_by") or ""),
             "active_skill": str(response.get("active_skill") or ""),
             "has_error": str(bool(error)).lower(),
+            "has_agent_error": str(bool(manager_fallback)).lower(),
         }
         user_hash = pseudonymous_user_hash(user_id)
         if user_hash:
@@ -545,6 +554,27 @@ def log_chat_run(
                             span.set_attribute(SpanAttributeKey.CHAT_USAGE, token_usage)
                         if model_name:
                             span.set_attribute(SpanAttributeKey.MODEL, model_name)
+                except Exception:
+                    pass
+            if manager_fallback:
+                try:
+                    with mlflow.start_span(name="agent.team_manager.error", span_type="AGENT") as failure_span:
+                        failure_span.set_inputs({
+                            "agent": "team_manager",
+                            "model": settings.AGNO_MODEL,
+                            "stage": manager_fallback.get("stage"),
+                        })
+                        failure_span.set_attribute("error.type", str(
+                            manager_fallback.get("error_type") or "UnknownManagerError"
+                        ))
+                        failure_span.set_attribute("error.handled", True)
+                        failure_span.set_outputs({
+                            "status": "fallback_handled",
+                            "fallback_action": orchestration.get("action"),
+                            "fallback_lead_agent": response.get("lead_agent") or response.get("handled_by"),
+                            "assignments": orchestration.get("assignments") or [],
+                        })
+                        failure_span.set_status("ERROR")
                 except Exception:
                     pass
             return {**response_payload, "intermediate_outputs": intermediate}
@@ -646,6 +676,7 @@ def _execution_trace(
     shared_state = response.get("shared_state") or {}
     orchestration = response.get("orchestration") or {}
     assignments = orchestration.get("assignments") or []
+    manager_fallback = orchestration.get("fallback") if isinstance(orchestration.get("fallback"), dict) else None
     handoff = response.get("handoff")
 
     steps: list[dict[str, Any]] = [
@@ -671,6 +702,15 @@ def _execution_trace(
             "confidence": response.get("confidence"),
         },
     ]
+    if manager_fallback:
+        steps.append({
+            "stage": "agent_error",
+            "agent": "team_manager",
+            "model": settings.AGNO_MODEL,
+            "failure_stage": manager_fallback.get("stage"),
+            "error_type": manager_fallback.get("error_type"),
+            "handled_by_fallback": True,
+        })
     if handoff:
         steps.append({"stage": "handoff", **handoff})
     if sql:
@@ -699,6 +739,7 @@ def _execution_trace(
             "handoff": bool(handoff),
             "manager_action": orchestration.get("action"),
             "assignment_count": len(assignments),
+            "manager_fallback_used": bool(manager_fallback),
         },
         "steps": steps,
     }

@@ -15,6 +15,7 @@ class FakeSpan:
         self.inputs = None
         self.outputs = None
         self.attributes = {}
+        self.status = None
 
     def __enter__(self):
         self.owner.stack.append(self)
@@ -32,6 +33,9 @@ class FakeSpan:
     def set_attribute(self, key, value) -> None:
         self.attributes[key] = value
 
+    def set_status(self, value) -> None:
+        self.status = value
+
 
 class FakeMlflow:
     def __init__(self) -> None:
@@ -44,6 +48,17 @@ class FakeMlflow:
         span.attributes.update(attributes or {})
         self.spans.append(span)
         return span
+
+    def trace(self, name="span", span_type="UNKNOWN"):
+        def decorate(function):
+            def wrapped(*args, **kwargs):
+                with self.start_span(name=name, span_type=span_type) as span:
+                    span.set_inputs({"args": args, "kwargs": kwargs})
+                    result = function(*args, **kwargs)
+                    span.set_outputs(result)
+                    return result
+            return wrapped
+        return decorate
 
     def get_current_active_span(self):
         return self.stack[-1] if self.stack else None
@@ -115,6 +130,43 @@ class ReportObservabilityTests(unittest.TestCase):
         self.assertEqual(root.outputs["error_type"], "RuntimeError")
         self.assertEqual(fake.trace_updates[-1]["state"], "ERROR")
         self.assertEqual(fake.trace_updates[-1]["tags"]["has_error"], "true")
+
+    def test_handled_manager_failure_is_an_error_child_span(self) -> None:
+        fake = FakeMlflow()
+        p1, p2, p3 = self._patches(fake)
+        response = {
+            "answer": "Hi!",
+            "mode": "conversation",
+            "confidence": 0.9,
+            "lead_agent": "team_manager",
+            "orchestration": {
+                "manager": "team_manager",
+                "action": "respond",
+                "assignments": [],
+                "fallback": {
+                    "stage": "manager_provider_call",
+                    "error_type": "RuntimeError",
+                },
+            },
+        }
+        with p1, p2, p3:
+            observability.log_chat_run(
+                project_id="project-1",
+                dataset={"id": "dataset-1", "name": "Population", "profile": {}},
+                message="hey",
+                history=[],
+                response=response,
+                elapsed_ms=10,
+            )
+
+        root, failure = fake.spans
+        self.assertEqual(root.name, "Data-Berge chat turn")
+        self.assertEqual(failure.name, "agent.team_manager.error")
+        self.assertIs(failure.parent, root)
+        self.assertEqual(failure.status, "ERROR")
+        self.assertEqual(failure.attributes["error.type"], "RuntimeError")
+        self.assertEqual(failure.outputs["status"], "fallback_handled")
+        self.assertEqual(fake.trace_updates[-1]["tags"]["has_agent_error"], "true")
 
 
 if __name__ == "__main__":
