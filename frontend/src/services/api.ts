@@ -1,6 +1,6 @@
 import { Artifact, ChatAttachment, ChatResponse, CustomReportType, Dataset, ModelTransformation, Overview, Project, RelationalSchema, RelationalRelationship, ReportSectionKind, ReportSectionPresentation, ReportTypeSection } from '../types/domain';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || '/api').replace(/\/+$/, '');
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || '/api').replace(/\/+$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem('db_token');

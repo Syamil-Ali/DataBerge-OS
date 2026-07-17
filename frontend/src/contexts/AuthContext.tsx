@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+import { API_BASE } from '../services/api';
+
 type User = {
   id: string;
   email: string;
@@ -25,7 +27,6 @@ export function useAuth(): AuthContextType {
   return ctx;
 }
 
-const API = '/api';
 const TOKEN_KEY = 'db_token';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -39,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    fetch(`${API}/auth/me`, {
+    fetch(`${API_BASE}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => {
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API}/auth/login`, {
+    const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (email: string, name: string, password: string) => {
-    const res = await fetch(`${API}/auth/register`, {
+    const res = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, name, password }),
