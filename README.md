@@ -1,67 +1,54 @@
 # Data-Berge OS
 
-Data-Berge OS is a local, single-tenant analytics operating system for business teams. It turns uploaded CSV/XLSX files into profiled datasets, queryable workspaces, generated charts, and executive report drafts that must be approved before final use.
+Data-Berge OS is a multi-tenant analytics operating system for business teams. It turns CSV/XLSX and OpenDOSM data into governed profiles, queryable workspaces, charts, and approval-based executive reports.
 
-## What is included
+## Production architecture
 
-- FastAPI backend with SQLite metadata storage.
-- Agno-ready agent layer: intake, profiling, query analyst, visualization, reporting, governance, and an analytics team facade.
-- DuckDB query engine for safe file analytics.
-- React/Vite cockpit UI with upload, profile, chat, artifact rail, and report approval flow.
-- Local filesystem storage under `data/`.
+- Stateless FastAPI replicas use pooled PostgreSQL for metadata and tenant-scoped transactions.
+- S3-compatible object storage owns uploads and generated working files; each API or worker uses only a disposable content-addressed cache.
+- Redis provides shared authentication rate limits and durable RQ queues.
+- Separate workers run report and connector jobs, with retry and durable job status.
+- Prometheus metrics and optional OpenTelemetry export cover HTTP traffic and queue depth.
+- Kubernetes HPA and KEDA examples scale API replicas and workers independently.
 
-## Backend
+SQLite, local files, in-process queues, and in-memory rate limits remain convenient development adapters. Production validation rejects those adapters and unsafe cookie, origin, host, and secret settings.
 
-```powershell
+## Local development
+
+~~~powershell
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 copy .env.example .env
+cd ..
 python run.py
-```
+~~~
 
-Backend runs at `http://localhost:8000`.
+This starts the backend at http://127.0.0.1:8000 and the frontend at http://127.0.0.1:5173.
 
-## One-command startup
+## Distributed development stack
 
-From the repo root, you can start backend, frontend, and MLflow together:
+~~~powershell
+docker compose up --build
+~~~
 
-```powershell
-python run.py
-```
+Open http://localhost:8080. Compose runs PostgreSQL, Redis, MinIO, a one-shot migration, stateless API, a separate worker, and the frontend. Named volumes belong only to PostgreSQL, Redis, and MinIO.
 
-This starts:
+## Release validation
 
-- backend at `http://127.0.0.1:8000`
-- frontend at `http://127.0.0.1:5173`
-- MLflow at `http://127.0.0.1:5000`
+~~~powershell
+cd backend
+.venv\Scripts\python.exe -m compileall -q app data_berge_core scripts
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+.venv\Scripts\python.exe -m pip check
 
-If you only want backend + frontend:
+cd ..\frontend
+npm ci
+npm audit --audit-level=high
+npm run test:run
+npm run build
+npm run test:e2e
+~~~
 
-```powershell
-python run.py --skip-mlflow
-```
-
-## Frontend
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs at `http://localhost:5173` and proxies `/api` to the backend.
-
-## Suggested smoke test
-
-1. Start the stack with `python run.py`.
-2. Upload `docs/sample_loan_data.csv`.
-3. Ask: `How many rows are in the dataset?`
-4. Ask: `What are the top values for Approval?`
-5. Review or revise the proposed report plan, then confirm generation.
-6. Approve or reject the report in the Reports tab.
-
-## Agno usage
-
-The current V1 uses deterministic analytics services as the source of truth and wraps them in Agno-compatible agent classes. If AgentOS and a model key are configured later, those agent definitions can be served as model-backed agents without changing the API or UI surface.
+CI also runs the PostgreSQL/Redis/S3/RQ integration suite and builds both containers. See [the architecture](docs/ARCHITECTURE.md) and [production runbook](docs/RUNBOOK.md).

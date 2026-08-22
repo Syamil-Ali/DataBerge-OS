@@ -1,27 +1,32 @@
 from __future__ import annotations
 
-import os
+import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 import bcrypt
 
-SECRET_KEY = os.getenv("JWT_SECRET", "change-me-in-production-use-openssl-rand-hex-32")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("TOKEN_EXPIRE_MINUTES", "1440"))  # 24h default
+from app import settings
 
-security_scheme = HTTPBearer()
+SECRET_KEY = settings.JWT_SECRET
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.TOKEN_EXPIRE_MINUTES
+
+security_scheme = HTTPBearer(auto_error=False)
 
 _BCRYPT_MAX_BYTES = 72
 
 
 def _truncate(password: str) -> bytes:
-    """Truncate password to 72 bytes (bcrypt limit)."""
+    """Encode a password while rejecting bcrypt's ambiguous truncation case."""
     encoded = password.encode("utf-8")
-    return encoded[:_BCRYPT_MAX_BYTES]
+    if len(encoded) > _BCRYPT_MAX_BYTES:
+        raise ValueError("Password must not exceed 72 UTF-8 bytes")
+    return encoded
 
 
 def hash_password(password: str) -> str:
@@ -34,23 +39,74 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    issued_at = datetime.now(timezone.utc)
+    expire = issued_at + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({
+        "exp": expire,
+        "iat": issued_at,
+        "jti": uuid.uuid4().hex,
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_AUDIENCE,
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict[str, Any]:
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            issuer=settings.JWT_ISSUER,
+            audience=settings.JWT_AUDIENCE,
+        )
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)) -> dict[str, Any]:
-    """FastAPI dependency that extracts and validates the current user from the Bearer token."""
+def issue_session(response: Response, user: dict[str, Any]) -> str:
+    token = create_access_token({"sub": user["id"], "email": user["email"]})
+    csrf_token = secrets.token_urlsafe(32)
+    max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    response.set_cookie(
+        settings.AUTH_COOKIE_NAME,
+        token,
+        max_age=max_age,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
+        path="/",
+    )
+    response.set_cookie(
+        settings.CSRF_COOKIE_NAME,
+        csrf_token,
+        max_age=max_age,
+        httponly=False,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
+        path="/",
+    )
+    return csrf_token
+
+
+def clear_session(response: Response) -> None:
+    for name in (settings.AUTH_COOKIE_NAME, settings.CSRF_COOKIE_NAME):
+        response.delete_cookie(name, domain=settings.COOKIE_DOMAIN, path="/")
+
+
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+) -> dict[str, Any]:
+    """Resolve a user from an HttpOnly session cookie or API bearer token."""
     from app.storage.database import get_user_by_id
 
-    payload = decode_token(credentials.credentials)
+    token = credentials.credentials if credentials else request.cookies.get(settings.AUTH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    payload = decode_token(token)
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")

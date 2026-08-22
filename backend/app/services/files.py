@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import zipfile
 from pathlib import Path
 from typing import BinaryIO
 
@@ -9,11 +10,16 @@ import pandas as pd
 import polars as pl
 import fastexcel
 
-from app.settings import UPLOAD_DIR
+from app.settings import MAX_UPLOAD_BYTES, MAX_WORKBOOK_UNCOMPRESSED_BYTES, UPLOAD_DIR
 from app.storage.database import new_id
 
 
 SUPPORTED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
+_COPY_CHUNK_BYTES = 1024 * 1024
+
+
+class UploadTooLarge(ValueError):
+    pass
 
 
 def safe_filename(filename: str) -> str:
@@ -21,6 +27,41 @@ def safe_filename(filename: str) -> str:
     suffix = Path(filename).suffix.lower()
     clean_stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-") or "dataset"
     return f"{clean_stem}{suffix}"
+
+
+def copy_upload_limited(file_obj: BinaryIO, target_path: Path, max_bytes: int = MAX_UPLOAD_BYTES) -> int:
+    """Stream an upload to disk and abort before it can exceed the configured cap."""
+    written = 0
+    try:
+        with target_path.open("wb") as target:
+            while chunk := file_obj.read(_COPY_CHUNK_BYTES):
+                written += len(chunk)
+                if written > max_bytes:
+                    raise UploadTooLarge(f"Upload exceeds the {max_bytes // (1024 * 1024)} MB limit.")
+                target.write(chunk)
+    except Exception:
+        target_path.unlink(missing_ok=True)
+        raise
+    return written
+
+
+def validate_workbook_archive(path: Path) -> None:
+    """Reject XLSX archives whose expanded contents are unreasonably large."""
+    if path.suffix.lower() != ".xlsx":
+        return
+    try:
+        with zipfile.ZipFile(path) as workbook:
+            expanded = sum(entry.file_size for entry in workbook.infolist())
+    except zipfile.BadZipFile as exc:
+        raise ValueError("The uploaded XLSX file is not a valid workbook.") from exc
+    if expanded > MAX_WORKBOOK_UNCOMPRESSED_BYTES:
+        raise UploadTooLarge(
+            f"Workbook expands beyond the {MAX_WORKBOOK_UNCOMPRESSED_BYTES // (1024 * 1024)} MB safety limit."
+        )
+
+
+def directory_size(path: Path) -> int:
+    return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
 
 
 def save_upload(file_obj: BinaryIO, filename: str) -> tuple[str, Path, str]:
@@ -33,8 +74,12 @@ def save_upload(file_obj: BinaryIO, filename: str) -> tuple[str, Path, str]:
     dataset_dir = UPLOAD_DIR / dataset_id
     dataset_dir.mkdir(parents=True, exist_ok=True)
     source_path = dataset_dir / safe_name
-    with source_path.open("wb") as target:
-        shutil.copyfileobj(file_obj, target)
+    try:
+        copy_upload_limited(file_obj, source_path)
+        validate_workbook_archive(source_path)
+    except Exception:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise
     return dataset_id, source_path, suffix.removeprefix(".")
 
 

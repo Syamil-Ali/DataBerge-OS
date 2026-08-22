@@ -2,7 +2,6 @@ import { Fragment, FormEvent, KeyboardEvent, useCallback, useEffect, useRef, use
 import { ArrowRight, Bot, Code, Download, Send, User } from 'lucide-react';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 
 import { askQuestion, ChatSession, createChatSession, deleteChatMessage, getArtifact, getChatProfileContext, getChatSession } from '../services/api';
 import { Artifact, ChatAttachment, ChatResponse, Dataset, Project, ReportDraft } from '../types/domain';
@@ -123,7 +122,7 @@ function SequentialGroupAnswer({ group }: { group: SequentialGroup }) {
           <article className="agent-answer-item" key={`${group.agent}-${item.index}`}>
             <h4>{item.question}</h4>
             <div className="markdown-body agent-answer-copy">
-              <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+              <Markdown remarkPlugins={[remarkGfm]}>
                 {item.answer || 'No answer returned.'}
               </Markdown>
             </div>
@@ -141,7 +140,9 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
   const [busySessionId, setBusySessionId] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [expandedSql, setExpandedSql] = useState<Set<number>>(new Set());
-  const [sessionsCollapsed, setSessionsCollapsed] = useState(false);
+  const [sessionsCollapsed, setSessionsCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches,
+  );
   const [exportingProfile, setExportingProfile] = useState(false);
   const [removingMessageId, setRemovingMessageId] = useState<string | null>(null);
   const activeSessionIdRef = useRef<string | null>(null);
@@ -531,7 +532,6 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
                   <div className="markdown-body">
                     <Markdown
                       remarkPlugins={[remarkGfm]}
-                      rehypePlugins={[rehypeRaw]}
                       components={{
                         a: ({ children, href }: any) => (
                           <a href={href} target="_blank" rel="noreferrer">

@@ -1,0 +1,107 @@
+/* === Unified Page Canvas === */
+html,
+body,
+#root,
+.app-shell,
+.empty-app,
+.auth-page,
+.landing-shell,
+.landing-shell.setup,
+.landing-showcase,
+.preview-page {
+  background: #eff6ff;
+}
+
+.auth-page,
+.landing-shell,
+.landing-showcase,
+.preview-page {
+  background-image: none;
+}
+
+/* === Unified Workspace Borders === */
+:root {
+  --db-border: #bfdbfe;
+  --db-border-soft: #dbeafe;
+  --db-border-strong: #93c5fd;
+}
+
+.app-shell.has-data :where(
+  .sidebar,
+  .sidebar-user-card,
+  .dataset-action-menu,
+  .metric-card,
+  .profile-panel,
+  .profile-section-card,
+  .profile-list-item,
+  .profile-inline-note,
+  .profile-mini-card,
+  .chat-panel,
+  .report-panel,
+  .report-card,
+  .report-form-shell,
+  .report-findings,
+  .report-section,
+  .executive-report-section,
+  .report-draft-card,
+  .session-panel,
+  .session-sidebar,
+  .session-item,
+  .rel-editor,
+  .rel-editor-tabs,
+  .rel-model-summary > div,
+  .rel-model-table-section,
+  .rel-model-table,
+  .rel-model-column,
+  .rel-model-flow,
+  .rel-model-flow-item,
+  .rel-tables-panel,
+  .rel-relationships-panel,
+  .rel-table-card,
+  .rel-row,
+  .rel-add-form,
+  .dict-panel,
+  .dict-sample-table,
+  .dict-empty,
+  .data-preview-view,
+  .data-preview-actions select,
+  .data-preview-column-head select,
+  .app-modal
+) {
+  border-color: var(--db-border);
+}
+
+.app-shell.has-data :where(
+  .sidebar-nav button.active,
+  .rel-editor-tabs button.active,
+  .rel-model-column:hover,
+  .rel-model-column.highlighted,
+  .rel-model-flow-item:hover,
+  .rel-model-flow-item.highlighted,
+  .rel-row:hover,
+  .rel-table-head:hover,
+  .data-preview-actions select:focus,
+  .data-preview-column-head select:focus
+) {
+  border-color: var(--db-border-strong);
+}
+
+.app-shell.has-data :where(
+  .data-preview-table th,
+  .data-preview-table td,
+  .rel-model-flow-item,
+  .rel-row,
+  .profile-list-item,
+  .report-section,
+  .executive-report-section
+) {
+  border-color: var(--db-border-soft);
+}
+
+/* Override Tailwind border-slate-200 inside report components */
+.app-shell.has-data .report-panel [class*="border-slate"] {
+  border-color: var(--db-border);
+}
+.app-shell.has-data .report-panel [class*="border-slate-100"] {
+  border-color: var(--db-border-soft);
+}

@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from app.auth.security import get_current_user
 from app.schemas.relational import DataDictionaryMappingRequest, RelationshipUpdateRequest
 from app.services.data_engineering import NULL_LIKE_MARKERS, build_data_engineering_contract
-from app.services.files import safe_filename
+from app.services.files import UploadTooLarge, copy_upload_limited, directory_size, safe_filename, validate_workbook_archive
 from app.services.profiling import profile_dataframe
 from app.services.relational import (
     apply_data_dictionary_mapping,
@@ -35,6 +35,8 @@ from app.services.relational import (
     read_csv_table,
 )
 from app.settings import UPLOAD_DIR
+from app import settings
+from app.storage.object_store import get_object_store, persist_file
 from app.storage import database
 
 router = APIRouter(prefix="/projects/{project_id}/relational-schemas", tags=["relational"])
@@ -319,18 +321,57 @@ def _materialize_schema_dataset(
     """Create/update the working dataset that powers Explorer/Report for confirmed schemas."""
     existing_dataset = database.get_dataset(schema_id)
     if existing_dataset and not force:
-        working_path = Path(str(existing_dataset.get("working_path") or ""))
-        if working_path.exists():
-            return
+        return
 
     working_df, column_descriptions, joined_tables = _joined_schema_dataframe(schema_record)
     if working_df.empty:
         return
 
     source_path = str(schema_record.get("source_path") or "")
+    source_uri = str(schema_record.get("source_uri") or source_path)
     file_type = Path(str(schema_record.get("original_filename") or source_path)).suffix.lower().removeprefix(".") or "file"
-    working_path = str(Path(source_path).with_suffix(".model.working.csv"))
-    working_df.to_csv(working_path, index=False)
+    working_file = (UPLOAD_DIR / schema_id / f"{schema_id}.model.working.csv").resolve()
+    working_file.parent.mkdir(parents=True, exist_ok=True)
+    temporary_file = working_file.with_suffix(working_file.suffix + ".tmp")
+    working_df.to_csv(temporary_file, index=False)
+    new_bytes = temporary_file.stat().st_size
+    store = get_object_store()
+    old_working_uri = str((existing_dataset or {}).get("working_path") or "")
+    if old_working_uri:
+        try:
+            previous_bytes = store.size(old_working_uri)
+        except Exception:
+            previous_bytes = 0
+    else:
+        previous_bytes = 0
+    storage_delta = new_bytes - previous_bytes
+    if storage_delta > 0 and not database.reserve_user_storage(user_id, storage_delta):
+        temporary_file.unlink(missing_ok=True)
+        raise ValueError("Storage limit exceeded while materializing the data model.")
+    try:
+        temporary_file.replace(working_file)
+    except Exception:
+        if storage_delta > 0:
+            database.update_user_storage(user_id, -storage_delta)
+        temporary_file.unlink(missing_ok=True)
+        raise
+    working_uri = str(working_file)
+    new_object_uri = ""
+    if settings.OBJECT_STORAGE_BACKEND == "s3":
+        digest = hashlib.sha256(working_file.read_bytes()).hexdigest()[:16]
+        try:
+            new_object_uri = persist_file(
+                working_file,
+                user_id=user_id,
+                namespace=schema_id,
+                name=f"{schema_id}.model.{digest}.csv",
+            )
+            working_uri = new_object_uri
+        except Exception:
+            if storage_delta > 0:
+                database.update_user_storage(user_id, -storage_delta)
+            working_file.unlink(missing_ok=True)
+            raise
     schema_tables = (schema_record.get("schema", {}) or {}).get("tables", {}) or {}
     if len(joined_tables) > 1:
         semantic_overrides = {
@@ -355,11 +396,11 @@ def _materialize_schema_dataset(
         "source_type": "relational_model",
         "file_type": file_type,
         "original_name": schema_record.get("original_filename"),
-        "source_path": source_path,
-        "working_path": working_path,
+        "source_path": source_uri,
+        "working_path": working_uri,
         "lineage": {
-            "read_path": source_path,
-            "working_path": working_path,
+            "read_path": source_uri,
+            "working_path": working_uri,
             "mode": "confirmed data model join" if len(joined_tables) > 1 else "confirmed data model",
             "refreshable": False,
             "joined_tables": joined_tables,
@@ -374,17 +415,29 @@ def _materialize_schema_dataset(
         "name": f"{schema_record.get('name')} model",
         "original_filename": schema_record.get("original_filename") or Path(source_path).name,
         "file_type": file_type,
-        "source_path": source_path,
-        "working_path": working_path,
+        "source_path": source_uri,
+        "working_path": working_uri,
         "row_count": profile["row_count"],
         "column_count": profile["column_count"],
         "status": "profiled",
         "profile": profile,
     }
 
-    if database.get_dataset_for_user(user_id, project_id, schema_id):
-        database.delete_dataset_for_user(user_id, project_id, schema_id)
-    database.create_dataset_for_user(user_id, record)
+    try:
+        database.replace_dataset_for_user(user_id, record)
+    except Exception:
+        if new_object_uri and new_object_uri != old_working_uri:
+            store.delete(new_object_uri)
+        if storage_delta > 0:
+            database.update_user_storage(user_id, -storage_delta)
+        working_file.unlink(missing_ok=True)
+        raise
+    if storage_delta < 0:
+        database.update_user_storage(user_id, storage_delta)
+    if new_object_uri and old_working_uri and old_working_uri != new_object_uri:
+        store.delete(old_working_uri)
+    if settings.OBJECT_STORAGE_BACKEND == "s3":
+        working_file.unlink(missing_ok=True)
 
 
 @router.get("")
@@ -424,8 +477,15 @@ def upload_relational(
     dataset_dir = UPLOAD_DIR / schema_id
     dataset_dir.mkdir(parents=True, exist_ok=True)
     source_path = dataset_dir / safe_name
-    with source_path.open("wb") as target:
-        shutil.copyfileobj(file.file, target)
+    try:
+        copy_upload_limited(file.file, source_path)
+        validate_workbook_archive(source_path)
+    except UploadTooLarge as exc:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise HTTPException(status_code=413, detail=str(exc)) from exc
+    except ValueError as exc:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # Load each real data source as a table. Single-table files still enter
     # Data Model so the user can review and confirm the model before Data Pulse.
@@ -467,17 +527,49 @@ def upload_relational(
         shutil.rmtree(dataset_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=f"Schema build failed: {exc}") from exc
 
+    source_bytes = directory_size(dataset_dir)
+    if not database.reserve_user_storage(user["id"], source_bytes):
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise HTTPException(status_code=413, detail="Storage limit exceeded. Delete some datasets first.")
+
+    try:
+        source_uri = persist_file(
+            source_path,
+            user_id=user["id"],
+            namespace=schema_id,
+            name=source_path.name,
+        )
+    except Exception:
+        database.update_user_storage(user["id"], -source_bytes)
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise
+    schema_source = schema.get("source") or {}
+    schema_source["source_path"] = source_uri
+    lineage = schema_source.get("lineage") or {}
+    lineage["read_path"] = source_uri
+    lineage["working_path"] = source_uri
+    schema_source["lineage"] = lineage
+    schema["source"] = schema_source
+
     # Store in database
     record = {
         "project_id": project_id,
         "name": Path(filename).stem,
         "original_filename": filename,
-        "source_path": str(source_path),
+        "source_path": source_uri,
         "schema": schema,
         "status": "draft",
     }
-    result = database.create_relational_schema(record, user_id=user["id"])
-    return result
+    try:
+        created = database.create_relational_schema(record, user_id=user["id"])
+        if settings.OBJECT_STORAGE_BACKEND == "s3":
+            shutil.rmtree(dataset_dir, ignore_errors=True)
+        return created
+    except Exception:
+        database.update_user_storage(user["id"], -source_bytes)
+        get_object_store().delete_namespace(user_id=user["id"], namespace=schema_id)
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        raise
 
 
 @router.get("/{schema_id}")
@@ -652,11 +744,14 @@ def delete_schema(project_id: str, schema_id: str, user: dict = Depends(get_curr
     schema = _schema_for_user(project_id, schema_id, user["id"])
     if not schema:
         raise HTTPException(status_code=404, detail="Schema not found")
+    store = get_object_store()
+    stored_bytes = store.namespace_usage(user_id=user["id"], namespace=schema_id)
+    source_path = Path(str(schema.get("source_path", ""))).resolve()
     result = database.delete_relational_schema(project_id, schema_id)
     if database.get_dataset_for_user(user["id"], project_id, schema_id):
         database.delete_dataset_for_user(user["id"], project_id, schema_id)
+    store.delete_namespace(user_id=user["id"], namespace=schema_id)
     # Clean up files
-    source_path = Path(str(schema.get("source_path", ""))).resolve()
     upload_root = UPLOAD_DIR.resolve()
     try:
         source_path.relative_to(upload_root)
@@ -665,4 +760,6 @@ def delete_schema(project_id: str, schema_id: str, user: dict = Depends(get_curr
             shutil.rmtree(dataset_dir, ignore_errors=True)
     except ValueError:
         pass
+    if stored_bytes:
+        database.update_user_storage(user["id"], -stored_bytes)
     return {"deleted": True, "schema_id": schema_id}

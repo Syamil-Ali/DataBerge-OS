@@ -124,8 +124,8 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                minLength={6}
+                placeholder="At least 12 characters with a number"
+                minLength={12}
                 required
               />
               <button
@@ -148,7 +148,7 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Enter your password again"
-                  minLength={6}
+                  minLength={12}
                   required
                 />
                 <button
@@ -169,7 +169,7 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
         </form>
 
         <div className="auth-footer">
-          <span>10 MB storage per user · AI-powered analysis · No credit card required</span>
+          <span>100 MB storage per user · AI-powered analysis · No credit card required</span>
         </div>
       </div>
     </div>

@@ -1,0 +1,138 @@
+x-backend-environment: &backend-environment
+  APP_ENV: local
+  DATA_DIR: /data
+  DATABASE_URL: postgresql://data_berge:data_berge_dev@postgres:5432/data_berge
+  REDIS_URL: redis://redis:6379/0
+  QUEUE_MODE: redis
+  OBJECT_STORAGE_BACKEND: s3
+  S3_BUCKET: data-berge
+  S3_ENDPOINT_URL: http://minio:9000
+  S3_REGION: us-east-1
+  S3_ACCESS_KEY_ID: data_berge
+  S3_SECRET_ACCESS_KEY: data_berge_dev_secret
+  AUTO_MIGRATE: "false"
+  RUN_STARTUP_RECONCILIATION: "false"
+  MLFLOW_TRACKING_ENABLED: "false"
+
+services:
+  postgres:
+    image: postgres:16.9-alpine
+    environment:
+      POSTGRES_DB: data_berge
+      POSTGRES_USER: data_berge
+      POSTGRES_PASSWORD: data_berge_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U data_berge -d data_berge"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.5-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: data_berge
+      MINIO_ROOT_PASSWORD: data_berge_dev_secret
+    volumes:
+      - object_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - mc alias set local http://minio:9000 data_berge data_berge_dev_secret && mc mb --ignore-existing local/data-berge
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: *backend-environment
+    command: ["python", "-m", "scripts.migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: "no"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      <<: *backend-environment
+      CORS_ALLOW_ORIGINS: http://localhost:8080
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      COOKIE_SECURE: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: *backend-environment
+    command: ["python", "-m", "scripts.worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      BACKEND_ORIGIN: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  object_data:

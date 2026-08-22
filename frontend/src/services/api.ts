@@ -2,11 +2,29 @@ import { Artifact, ChatAttachment, ChatResponse, CustomReportType, Dataset, Mode
 
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || '/api').replace(/\/+$/, '');
 
+let inMemoryCsrfToken: string | undefined;
+
+export function setCsrfToken(value?: string): void {
+  inMemoryCsrfToken = value || undefined;
+}
+
+export function csrfToken(): string | undefined {
+  if (inMemoryCsrfToken) return inMemoryCsrfToken;
+  const prefix = 'db_csrf=';
+  const cookie = document.cookie.split('; ').find((part) => part.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : undefined;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = localStorage.getItem('db_token');
   const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  const method = (init?.method || 'GET').toUpperCase();
+  const csrf = csrfToken();
+  if (csrf && !['GET', 'HEAD', 'OPTIONS'].includes(method)) headers['X-CSRF-Token'] = csrf;
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+    credentials: 'include',
+  });
   const text = await response.text();
   if (!response.ok) {
     throw new Error(text || `Request failed (${response.status})`);

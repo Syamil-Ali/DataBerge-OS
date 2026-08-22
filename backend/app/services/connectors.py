@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+import shutil
 from typing import BinaryIO, Any
 
 import pandas as pd
@@ -43,13 +44,16 @@ class FileConnector:
 
     def ingest_upload(self, file_obj: BinaryIO, filename: str) -> IngestedDataset:
         dataset_id, source_path, file_type = save_upload(file_obj, filename)
-        df = load_dataframe(source_path)
-        if df.empty:
-            raise ValueError("Dataset is empty.")
-
-        working_path = Path(source_path).with_suffix(".working.csv")
-        df.to_csv(working_path, index=False)
-        column_descriptions = load_column_descriptions(source_path)
+        try:
+            df = load_dataframe(source_path)
+            if df.empty:
+                raise ValueError("Dataset is empty.")
+            working_path = Path(source_path).with_suffix(".working.csv")
+            df.to_csv(working_path, index=False)
+            column_descriptions = load_column_descriptions(source_path)
+        except Exception:
+            shutil.rmtree(source_path.parent, ignore_errors=True)
+            raise
 
         return IngestedDataset(
             dataset_id=dataset_id,

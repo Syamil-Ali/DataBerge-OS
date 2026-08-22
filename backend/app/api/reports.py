@@ -98,3 +98,5 @@ def create_report(project_id: str, payload: ReportRequest, user: dict = Depends(
         return queue_report_workflow(project_id, payload, user_id=user["id"])
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc

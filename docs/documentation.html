@@ -367,9 +367,9 @@
 │       └──────────────┴──────────────┴───────────────────┘                │
 │                           fetch('/api/*')                                │
 └─────────────────────────────────┬───────────────────────────────────────┘
-                                  │  JWT Bearer
+                                  │  HttpOnly cookie + CSRF
 ┌─────────────────────────────────┴───────────────────────────────────────┐
-│                     FASTAPI BACKEND  (Python 3.11+)                     │
+│                     FASTAPI BACKEND  (Python 3.12)                      │
 │                                                                         │
 │  ┌─── API Layer (app/) ─────────────────────────────────────────────┐  │
 │  │ auth │ projects │ datasets │ chat │ reports │ artifacts │ opendosm│  │
@@ -394,7 +394,7 @@
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                         │
 │  ┌─── Storage ──────────────────────────────────────────────────────┐  │
-│  │  SQLite (app.db)  │  DuckDB (in-memory queries)  │  MLflow      │  │
+│  │ PostgreSQL │ S3-compatible objects │ Redis/RQ │ DuckDB │ MLflow │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────┘</div>
 
@@ -467,7 +467,7 @@
   <p>All state is managed with React hooks (<code>useState</code>, <code>useEffect</code>, <code>useMemo</code>, <code>useRef</code>). No Redux or Zustand. The <code>AuthContext</code> provides authentication state (user, token, loading) via React Context across the app.</p>
 
   <h3>API Service Layer</h3>
-  <p>A thin <code>fetch</code> wrapper in <code>services/api.ts</code> attaches JWT Bearer tokens from <code>localStorage</code>. Covers all backend endpoints: projects, datasets, chat, chat-sessions, reports, artifacts, OpenDOSM, relational schemas, and dictionary mapping.</p>
+  <p>A thin <code>fetch</code> wrapper in <code>services/api.ts</code> sends same-origin HttpOnly session cookies and CSRF headers. Bearer tokens are never persisted in browser storage.</p>
 </div>
 
 <!-- ===== BACKEND ===== -->
@@ -532,7 +532,7 @@
     <div class="flow-step"><div class="label">Backend</div><div class="desc">Port 8000</div></div>
     <div class="flow-step"><div class="label">Frontend</div><div class="desc">Port 5173</div></div>
   </div>
-  <p>The root <code>run.py</code> launcher starts all three services simultaneously. It checks port availability, handles graceful shutdown on Ctrl+C, and supports <code>--skip-mlflow</code> to run without the tracking server.</p>
+  <p>The root <code>run.py</code> launcher starts the backend and frontend. MLflow is opt-in through <code>--with-mlflow</code>. The launcher checks port availability and handles graceful shutdown.</p>
 
   <h3>Step 2 — Authentication</h3>
   <div class="flow">
@@ -540,9 +540,9 @@
     <div class="flow-arrow">→</div>
     <div class="flow-step"><div class="label">Register</div><div class="desc">Email + password</div></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-step"><div class="label">JWT Token</div><div class="desc">Stored in localStorage</div></div>
+    <div class="flow-step"><div class="label">Session</div><div class="desc">HttpOnly cookie + CSRF</div></div>
   </div>
-  <p>JWT authentication with HS256. Tokens expire after 24 hours. Passwords are hashed with bcrypt. All API routes require a Bearer token via the <code>get_current_user</code> dependency.</p>
+  <p>JWT authentication uses HS256, issuer/audience validation, one-hour default expiry, Secure HttpOnly cookies, and CSRF validation. Passwords are hashed with bcrypt and authentication endpoints are rate limited. API bearer tokens remain available for non-browser clients.</p>
 
   <h3>Step 3 — Upload</h3>
   <div class="flow">
@@ -753,14 +753,14 @@
     <li><strong>Curated catalog</strong> — 15+ datasets (CPI, population, births, deaths, marriages, fertility, household profiles)</li>
     <li><strong>Background download</strong> — Polling-based task status</li>
     <li><strong>Auto-relationships</strong> — Lookup table resolution from metadata field descriptions</li>
-    <li><strong>Storage limit</strong> — 10 MB per user, enforced on upload and connect operations</li>
+    <li><strong>Storage limit</strong> — 100 MB per user by default, enforced across uploads and connect operations</li>
   </ul>
 </div>
 
 <!-- ===== DATABASE ===== -->
 <div class="section" id="database">
-  <h2>8. Database <span class="badge">SQLite</span></h2>
-  <p>SQLite database at <code>data/app.db</code> with 6 core tables. All flexible data is stored as JSON blobs in <code>*_json</code> columns. Per-user data isolation enforced by <code>user_id</code> columns on every table.</p>
+  <h2>8. Persistence <span class="badge">PostgreSQL + S3 + Redis</span></h2>
+  <p>Production uses pooled PostgreSQL for tenant-scoped metadata, S3-compatible object storage for source and working files, and Redis/RQ for shared limits and durable jobs. SQLite, local files, and in-process queues remain development adapters only.</p>
 
   <table>
     <tr><th>Table</th><th>Key Columns</th><th>Purpose</th></tr>
@@ -802,7 +802,7 @@
   </table>
 
   <div class="info-box">
-    <p><strong>Migration:</strong> The database layer uses a <code>_migrate</code> function that adds missing columns and tables to existing databases, enabling schema evolution without manual SQL migrations.</p>
+    <p><strong>Migration:</strong> <code>python -m scripts.migrate</code> applies numbered schema migrations as a release step. Production API replicas assert the expected schema and do not race migrations at startup.</p>
   </div>
 </div>
 
@@ -816,7 +816,10 @@
     <tr><td><code>APP_NAME</code></td><td>Data-Berge OS</td><td>Application display name</td></tr>
     <tr><td><code>APP_ENV</code></td><td>local</td><td>Runtime environment</td></tr>
     <tr><td><code>CORS_ALLOW_ORIGINS</code></td><td>localhost:5173,localhost:3000</td><td>Allowed frontend origins</td></tr>
-    <tr><td><code>DB_PATH</code></td><td>../data/app.db</td><td>SQLite database path</td></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>(empty)</td><td>PostgreSQL connection URL; required in production</td></tr>
+    <tr><td><code>REDIS_URL</code></td><td>(empty)</td><td>Redis URL for shared limits and RQ</td></tr>
+    <tr><td><code>OBJECT_STORAGE_BACKEND</code></td><td>local</td><td>Use <code>s3</code> in production</td></tr>
+    <tr><td><code>S3_BUCKET</code></td><td>(empty)</td><td>S3-compatible object bucket</td></tr>
     <tr><td><code>DATA_DIR</code></td><td>../data</td><td>Root data directory</td></tr>
     <tr><td><code>AGNO_MODEL</code></td><td>openai:gpt-4.1-mini</td><td>LLM model identifier (provider:model format)</td></tr>
     <tr><td><code>OPENAI_API_KEY</code></td><td>(empty)</td><td>OpenAI API key</td></tr>
@@ -831,19 +834,19 @@
 
   <h3>Security</h3>
   <ul>
-    <li><strong>JWT authentication</strong> — HS256 tokens, 24-hour expiry (configurable)</li>
+    <li><strong>JWT authentication</strong> — HttpOnly sessions, CSRF protection, issuer/audience validation, configurable expiry</li>
     <li><strong>Password hashing</strong> — bcrypt, truncated to 72 bytes per bcrypt spec</li>
     <li><strong>Per-user isolation</strong> — All data scoped by <code>user_id</code> columns</li>
-    <li><strong>Storage limits</strong> — 10 MB per user, enforced on upload</li>
+    <li><strong>Storage limits</strong> — bounded streaming, workbook expansion checks, and a 100 MB default quota</li>
     <li><strong>SQL safety</strong> — DuckDB queries validated as SELECT-only via <code>validate_select</code></li>
   </ul>
 
   <h3>Startup</h3>
-  <pre><code># Start everything (MLflow + Backend + Frontend)
+  <pre><code># Start backend + frontend
 python run.py
 
-# Skip MLflow
-python run.py --skip-mlflow
+# Include MLflow
+python run.py --with-mlflow
 
 # Individual services
 uvicorn app.main:app --reload --port 8000   # Backend
@@ -853,7 +856,7 @@ npm run dev                                   # Frontend (Vite)</code></pre>
 <!-- ===== API REFERENCE ===== -->
 <div class="section" id="api">
   <h2>10. API Reference <span class="badge">REST Endpoints</span></h2>
-  <p>All endpoints are mounted under <code>/api</code> and require JWT Bearer authentication unless noted.</p>
+  <p>All endpoints are mounted under <code>/api</code>. Browser clients use HttpOnly cookie sessions with CSRF protection; API clients may use JWT Bearer authentication.</p>
 
   <table>
     <tr><th>Prefix</th><th>Key Endpoints</th><th>Description</th></tr>
@@ -873,7 +876,7 @@ npm run dev                                   # Frontend (Vite)</code></pre>
 <div class="section" id="structure">
   <h2>11. Project Structure <span class="badge">File Layout</span></h2>
   <pre><code>Data-Berge-OS/
-├── run.py                          # Launcher (starts MLflow + Backend + Frontend)
+├── run.py                          # Launcher (backend + frontend; MLflow optional)
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.ts
@@ -881,7 +884,7 @@ npm run dev                                   # Frontend (Vite)</code></pre>
 │       ├── App.tsx                 # Main orchestrator, routing, sidebar
 │       ├── main.tsx                # Entry point
 │       ├── services/
-│       │   └── api.ts              # fetch wrapper with JWT auth
+│       │   └── api.ts              # cookie/CSRF fetch wrapper
 │       ├── types/
 │       │   └── domain.ts           # TypeScript interfaces
 │       ├── utils/
@@ -901,7 +904,7 @@ npm run dev                                   # Frontend (Vite)</code></pre>
 ├── backend/
 │   ├── app/
 │   │   ├── main.py                 # FastAPI app, CORS, router mounting
-│   │   ├── database.py             # SQLite connection, migrations
+│   │   ├── storage/                # PostgreSQL repositories + object adapters
 │   │   ├── auth.py                 # JWT, bcrypt, user dependency
 │   │   ├── api/
 │   │   │   ├── auth.py
@@ -945,7 +948,7 @@ npm run dev                                   # Frontend (Vite)</code></pre>
 │       └── memory.py               # AgentMemory
 │
 ├── data/
-│   ├── app.db                      # SQLite database
+│   ├── app.db                      # local-development SQLite adapter
 │   ├── uploads/                    # Uploaded files
 │   └── artifacts/                  # Generated artifacts
 │

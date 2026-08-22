@@ -10,18 +10,23 @@ from __future__ import annotations
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import re
 import shutil
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.auth.security import get_current_user
 from app.services import opendosm
 from app.services.relational import build_relational_schema
-from app.settings import UPLOAD_DIR
+from app.settings import CONNECTOR_QUEUE_CAPACITY, CONNECTOR_WORKERS, OPENDOSM_MAX_ROWS, UPLOAD_DIR
+from app import settings
+from app.services.job_queue import enqueue
+from app.storage.object_store import get_object_store, persist_file
 from app.storage import database
 
 router = APIRouter(prefix="/opendosm", tags=["opendosm"])
@@ -29,9 +34,65 @@ router = APIRouter(prefix="/opendosm", tags=["opendosm"])
 # ── In-memory task store ────────────────────────────────────────────────
 _tasks: dict[str, dict[str, Any]] = {}
 _tasks_lock = threading.Lock()
+_executor: ThreadPoolExecutor | None = None
+_executor_lock = threading.Lock()
+_capacity = threading.BoundedSemaphore(CONNECTOR_QUEUE_CAPACITY)
+_TASK_TTL_SECONDS = 60 * 60
 
 _LOOKUP_URL_RE = re.compile(r"open\.dosm\.gov\.my/data-catalogue/([A-Za-z0-9_-]+)")
 _MATCHED_COLUMN_RE = re.compile(r"matched\s+using\s+the\s+['\"]([^'\"]+)['\"]\s+column", re.I)
+
+
+def _set_task(
+    task_id: str,
+    user_id: str,
+    *,
+    status: str | None = None,
+    message: str | None = None,
+    schema: dict[str, Any] | None = None,
+) -> None:
+    if settings.QUEUE_MODE == "redis":
+        current = database.get_background_job(user_id, task_id)
+        database.update_background_job(
+            user_id,
+            task_id,
+            status=status or str((current or {}).get("status") or "running"),
+            message=message or str((current or {}).get("message") or ""),
+            result={"schema": schema} if schema else (current or {}).get("result") or {},
+        )
+        return
+    with _tasks_lock:
+        task = _tasks[task_id]
+        if status is not None:
+            task["status"] = status
+        if message is not None:
+            task["message"] = message
+        if schema is not None:
+            task["schema"] = schema
+
+
+def _get_executor() -> ThreadPoolExecutor:
+    global _executor
+    with _executor_lock:
+        if _executor is None:
+            _executor = ThreadPoolExecutor(max_workers=CONNECTOR_WORKERS, thread_name_prefix="opendosm-worker")
+        return _executor
+
+
+def shutdown_connector_queue() -> None:
+    global _executor
+    with _executor_lock:
+        executor, _executor = _executor, None
+    if executor is not None:
+        executor.shutdown(wait=False, cancel_futures=True)
+
+
+def _prune_tasks(now: float | None = None) -> None:
+    cutoff = (now or time.time()) - _TASK_TTL_SECONDS
+    with _tasks_lock:
+        expired = [task_id for task_id, task in _tasks.items() if float(task.get("created_at") or 0) < cutoff]
+        for task_id in expired:
+            _tasks.pop(task_id, None)
 
 
 def _table_name(dataset_id: str) -> str:
@@ -159,9 +220,12 @@ def _run_connect_task(
 ) -> None:
     """Background worker: download from API → save CSV → profile → store."""
     try:
-        with _tasks_lock:
-            _tasks[task_id]["status"] = "downloading"
-            _tasks[task_id]["message"] = "Fetching data from OpenDOSM API..."
+        _set_task(
+            task_id,
+            user_id,
+            status="running",
+            message="Fetching data from OpenDOSM API...",
+        )
 
         df = opendosm.fetch_dataset(dataset_id, limit=limit)
         if df.empty:
@@ -186,7 +250,7 @@ def _run_connect_task(
         total_file_size = source_path.stat().st_size if source_path.exists() else 0
         if not database.check_storage_limit(user_id, total_file_size):
             shutil.rmtree(dataset_dir, ignore_errors=True)
-            raise ValueError("Storage limit exceeded. Delete some datasets first (10 MB per user).")
+            raise ValueError("Storage limit exceeded. Delete some datasets first.")
 
         catalogue_item = next((item for item in opendosm.list_datasets() if item["id"] == dataset_id), None)
         display_name = catalogue_item["name"] if catalogue_item else dataset_id.replace("_", " ").title()
@@ -220,8 +284,11 @@ def _run_connect_task(
                 if source_column not in source_df.columns:
                     continue
                 if lookup_id not in visited:
-                    with _tasks_lock:
-                        _tasks[task_id]["message"] = f"Fetching lookup table {lookup_id} from OpenDOSM API..."
+                    _set_task(
+                        task_id,
+                        user_id,
+                        message=f"Fetching lookup table {lookup_id} from OpenDOSM API...",
+                    )
                     lookup_df = opendosm.fetch_dataset(lookup_id, limit=limit)
                     if lookup_df.empty:
                         visited.add(lookup_id)
@@ -247,7 +314,7 @@ def _run_connect_task(
                     total_file_size += lookup_path.stat().st_size if lookup_path.exists() else 0
                     if not database.check_storage_limit(user_id, total_file_size):
                         shutil.rmtree(dataset_dir, ignore_errors=True)
-                        raise ValueError("Storage limit exceeded. Delete some datasets first (10 MB per user).")
+                        raise ValueError("Storage limit exceeded. Delete some datasets first.")
                     visited.add(lookup_id)
                     queued.append((lookup_table, lookup_id, lookup_df, lookup_metadata))
 
@@ -297,27 +364,55 @@ def _run_connect_task(
         )
         _merge_metadata_relationships(schema, metadata_relationships)
 
+        if user_id:
+            for item in table_sources:
+                local_path = Path(str(item["source_path"]))
+                item["source_path"] = persist_file(
+                    local_path,
+                    user_id=user_id,
+                    namespace=schema_id,
+                    name=local_path.name,
+                )
+            source_uri = next(
+                str(item["source_path"])
+                for item in table_sources
+                if item.get("role") == "primary"
+            )
+            root_source["source_path"] = source_uri
+            root_source["lineage"]["read_path"] = source_uri
+            root_source["lineage"]["working_path"] = source_uri
+            schema["source"] = root_source
+        else:
+            source_uri = str(source_path)
+
         record = {
             "id": schema_id,
             "project_id": project_id,
             "name": f"OpenDOSM: {display_name}",
             "original_filename": f"{ds_name}.csv",
-            "source_path": str(source_path),
+            "source_path": source_uri,
             "schema": schema,
             "status": "draft",
         }
-        schema_record = database.create_relational_schema(record, user_id=user_id)
-        database.update_user_storage(user_id, total_file_size)
+        if not database.reserve_user_storage(user_id, total_file_size):
+            shutil.rmtree(dataset_dir, ignore_errors=True)
+            raise ValueError("Storage limit exceeded. Delete some datasets first.")
+        try:
+            schema_record = database.create_relational_schema(record, user_id=user_id)
+        except Exception:
+            database.update_user_storage(user_id, -total_file_size)
+            shutil.rmtree(dataset_dir, ignore_errors=True)
+            raise
 
-        with _tasks_lock:
-            _tasks[task_id]["status"] = "completed"
-            _tasks[task_id]["message"] = "Done"
-            _tasks[task_id]["schema"] = schema_record
+        _set_task(task_id, user_id, status="completed", message="Done", schema=schema_record)
+        if settings.OBJECT_STORAGE_BACKEND == "s3":
+            shutil.rmtree(dataset_dir, ignore_errors=True)
 
     except Exception as exc:
-        with _tasks_lock:
-            _tasks[task_id]["status"] = "failed"
-            _tasks[task_id]["message"] = str(exc)
+        get_object_store().delete_namespace(user_id=user_id, namespace=locals().get("schema_id", task_id))
+        _set_task(task_id, user_id, status="failed", message=str(exc))
+        if settings.QUEUE_MODE == "redis":
+            raise
 
 
 # ── Endpoints ───────────────────────────────────────────────────────────
@@ -332,21 +427,51 @@ def list_datasets(user: dict = Depends(get_current_user)):
 class ConnectRequest(BaseModel):
     dataset_id: str
     project_id: str | None = None
-    limit: int | None = None
+    limit: int = Field(default=OPENDOSM_MAX_ROWS, ge=1, le=OPENDOSM_MAX_ROWS)
 
 
 @router.post("/connect")
 def connect_dataset(req: ConnectRequest, user: dict = Depends(get_current_user)):
     """Start background download + profile. Returns task_id for polling."""
     user_id = user["id"]
+    if settings.QUEUE_MODE != "redis":
+        _prune_tasks()
 
     if not database.check_storage_limit(user_id):
         raise HTTPException(
             status_code=413,
-            detail="Storage limit exceeded. Delete some datasets first (10 MB per user).",
+            detail="Storage limit exceeded. Delete some datasets first.",
         )
 
+    if settings.QUEUE_MODE != "redis" and not _capacity.acquire(blocking=False):
+        raise HTTPException(status_code=503, detail="Connector queue is full. Please retry shortly.")
+
     task_id = uuid.uuid4().hex
+    if settings.QUEUE_MODE == "redis":
+        database.create_background_job(
+            user_id,
+            queue="connectors",
+            kind="opendosm",
+            payload=req.model_dump(),
+            job_id=task_id,
+        )
+        try:
+            enqueue(
+                "connectors",
+                _run_connect_task,
+                task_id,
+                user_id,
+                req.dataset_id,
+                req.project_id,
+                req.limit,
+                job_id=task_id,
+                capacity=CONNECTOR_QUEUE_CAPACITY,
+            )
+        except RuntimeError as exc:
+            database.update_background_job(user_id, task_id, status="failed", message=str(exc))
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return {"task_id": task_id, "status": "queued"}
+
     with _tasks_lock:
         _tasks[task_id] = {
             "user_id": user_id,
@@ -356,12 +481,21 @@ def connect_dataset(req: ConnectRequest, user: dict = Depends(get_current_user))
             "created_at": time.time(),
         }
 
-    thread = threading.Thread(
-        target=_run_connect_task,
-        args=(task_id, user_id, req.dataset_id, req.project_id, req.limit),
-        daemon=True,
-    )
-    thread.start()
+    try:
+        future = _get_executor().submit(
+            _run_connect_task,
+            task_id,
+            user_id,
+            req.dataset_id,
+            req.project_id,
+            req.limit,
+        )
+        future.add_done_callback(lambda _: _capacity.release())
+    except Exception:
+        with _tasks_lock:
+            _tasks.pop(task_id, None)
+        _capacity.release()
+        raise
 
     return {"task_id": task_id, "status": "pending"}
 
@@ -369,6 +503,20 @@ def connect_dataset(req: ConnectRequest, user: dict = Depends(get_current_user))
 @router.get("/status/{task_id}")
 def task_status(task_id: str, user: dict = Depends(get_current_user)):
     """Poll to check whether the connect task is done."""
+    if settings.QUEUE_MODE == "redis":
+        job = database.get_background_job(user["id"], task_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Task not found")
+        response = {
+            "task_id": task_id,
+            "status": job["status"],
+            "message": job["message"],
+        }
+        schema = (job.get("result") or {}).get("schema")
+        if schema:
+            response["schema"] = schema
+        return response
+    _prune_tasks()
     with _tasks_lock:
         task = _tasks.get(task_id)
     if not task:

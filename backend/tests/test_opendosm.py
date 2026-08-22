@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from app.api.opendosm import ConnectRequest
+from app.settings import OPENDOSM_MAX_ROWS
 from app.services import opendosm
 
 
@@ -67,10 +68,10 @@ class OpenDOSMTests(unittest.TestCase):
             timeout=30,
         )
 
-    def test_connect_request_is_uncapped_by_default(self) -> None:
+    def test_connect_request_has_a_safe_default_cap(self) -> None:
         request = ConnectRequest(dataset_id="population_malaysia")
 
-        self.assertIsNone(request.limit)
+        self.assertEqual(request.limit, OPENDOSM_MAX_ROWS)
 
 
 if __name__ == "__main__":

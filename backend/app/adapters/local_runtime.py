@@ -4,6 +4,7 @@ from typing import Any
 
 from app.services.query_engine import AmbiguousQueryError, build_sql, execute_sql
 from app.storage import database
+from app.storage.object_store import materialize_record_paths
 from data_berge_core.contracts.dataset import DatasetContext
 
 
@@ -43,13 +44,13 @@ class LocalProfileProvider:
                 return None
             if self.user_id and dataset.get("user_id") != self.user_id:
                 return None
-            return DatasetContext.from_record(dataset)
+            return DatasetContext.from_record(materialize_record_paths(dataset))
 
         schema = database.get_relational_schema(dataset_id)
         if schema:
             if self.user_id and schema.get("user_id") != self.user_id:
                 return None
-            return self._schema_to_context(schema, project_id)
+            return self._schema_to_context(materialize_record_paths(schema), project_id)
 
         if project_id:
             matching_schema = _find_schema_containing_table(dataset_id, project_id, self.user_id)
@@ -63,6 +64,7 @@ class LocalProfileProvider:
 
     def _schema_to_context(self, schema: dict, project_id: str | None = None) -> DatasetContext:
         from app.workflows.chat_workflow import _schema_to_virtual_dataset
+        schema = materialize_record_paths(schema)
         virtual = _schema_to_virtual_dataset(schema)
         if project_id:
             virtual["project_id"] = project_id

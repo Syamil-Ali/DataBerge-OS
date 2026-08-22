@@ -501,6 +501,233 @@
   }
 
   .data-setup-head h1 {
-    font-size: 38px;
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  .landing-shell.setup {
+    min-height: 100dvh;
+  }
+
+  .setup-nav {
+    min-height: 70px;
+    padding-top: max(10px, env(safe-area-inset-top));
+  }
+
+  .landing-nav-back {
+    min-height: 40px;
+  }
+
+  .data-setup-page {
+    align-content: start;
+    gap: 24px;
+    padding: 28px 0 max(36px, env(safe-area-inset-bottom));
+  }
+
+  .data-setup-head {
+    justify-items: start;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .data-setup-head p {
+    max-width: 350px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .data-source-grid {
+    gap: 10px;
+  }
+
+  .data-source-card {
+    min-height: 0;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    align-content: start;
+    gap: 12px 14px;
+    padding: 18px;
+  }
+
+  .data-source-card:active {
+    transform: scale(0.99);
+  }
+
+  .data-source-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .data-source-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .data-source-copy {
+    gap: 5px;
+  }
+
+  .data-source-copy strong {
+    font-size: 17px;
+  }
+
+  .data-source-copy span {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .data-source-tags {
+    grid-column: 2;
+    gap: 5px;
+  }
+
+  .data-source-tags em {
+    font-size: 9px;
+    padding: 5px 7px;
+  }
+
+  /* Compact the closing sequence instead of stacking desktop blocks endlessly. */
+  .showcase-stats {
+    width: calc(100% - 30px);
+    margin: 56px auto 48px;
+    text-align: left;
+  }
+
+  .showcase-stats h2 {
+    max-width: 340px;
+    margin: 10px 0 0;
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .showcase-stats p {
+    margin: 14px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .showcase-stats > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #dbe3ea;
+  }
+
+  .showcase-stats article {
+    min-width: 0;
+    padding-right: 10px;
+  }
+
+  .showcase-stats article + article {
+    padding-left: 12px;
+    border-left: 1px solid #dbe3ea;
+  }
+
+  .showcase-stats article strong {
+    font-size: clamp(25px, 8vw, 32px);
+  }
+
+  .showcase-stats article span {
+    margin-top: 7px;
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .showcase-source-cards {
+    width: calc(100% - 30px);
+    margin-bottom: 48px;
+    text-align: left;
+  }
+
+  .showcase-source-cards > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .showcase-source-cards button {
+    min-height: 138px;
+    padding: 18px 16px;
+    border-radius: 8px !important;
+  }
+
+  .showcase-source-cards button strong {
+    max-width: 120px;
+    font-size: 17px;
+    line-height: 1.15;
+  }
+
+  .showcase-source-cards button em {
+    margin-top: 42px;
+    font-size: 10px;
+  }
+
+  .showcase-source-cards button svg {
+    right: 14px;
+    bottom: 16px;
+  }
+
+  .showcase-final-cta {
+    width: calc(100% - 30px);
+    min-height: 0;
+    gap: 24px;
+    margin-bottom: 44px;
+    padding: 30px 24px;
+  }
+
+  .showcase-final-cta h2 {
+    margin-top: 9px;
+    font-size: 28px;
+    line-height: 1.08;
+  }
+
+  .showcase-final-cta p {
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .showcase-final-cta > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .showcase-final-cta button {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .showcase-footer {
+    padding: 30px 15px max(34px, env(safe-area-inset-bottom));
+  }
+
+  .showcase-footer-inner {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 26px 14px;
+  }
+
+  .showcase-footer-inner > .showcase-brand {
+    grid-column: 1 / -1;
+  }
+
+  .showcase-footer-inner > div {
+    min-width: 0;
+    gap: 7px;
+  }
+
+  .showcase-footer-inner > div:not(.showcase-brand) strong {
+    padding-bottom: 3px;
+    font-size: 11px;
+  }
+
+  .showcase-footer-inner > div:not(.showcase-brand) span {
+    font-size: 9px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
   }
 }

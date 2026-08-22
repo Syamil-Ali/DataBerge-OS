@@ -1,0 +1,347 @@
+/* === OpenDOSM Panel === */
+.landing-sources {
+  display: flex;
+  justify-content: center;
+  animation: fade-in-up 0.85s ease 0.35s both;
+}
+.source-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.source-toggle:hover {
+  border-color: #06b6d4;
+  background: #ecfeff;
+  color: #0e7490;
+}
+.source-toggle.active {
+  border-color: #06b6d4;
+  background: #ecfeff;
+  color: #0e7490;
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.1);
+}
+.opendosm-panel {
+  width: 100%;
+  max-width: 760px;
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.06);
+  animation: fade-in-up 0.3s ease;
+}
+.opendosm-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.opendosm-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #ecfeff;
+  color: #0891b2;
+  flex: 0 0 auto;
+}
+.opendosm-panel-head .opendosm-mark {
+  color: #0891b2;
+}
+.opendosm-panel-head div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.opendosm-panel-head strong {
+  font-size: 14px;
+  font-weight: 720;
+  color: #0f172a;
+}
+.opendosm-panel-head span {
+  font-size: 12px;
+  color: #64748b;
+}
+.opendosm-panel-head em {
+  margin-left: auto;
+  min-height: 26px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #475569;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.opendosm-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 13px;
+  padding: 20px 0;
+}
+.opendosm-error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecdd3;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.opendosm-categories {
+  display: grid;
+  gap: 14px;
+}
+.opendosm-category {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.opendosm-category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.opendosm-category-head h4 {
+  margin: 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 720;
+}
+.opendosm-category-head span {
+  min-width: 24px;
+  min-height: 22px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 650;
+}
+.opendosm-dataset-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.opendosm-dataset-btn {
+  min-width: 0;
+  min-height: 88px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.opendosm-dataset-btn:hover:not(:disabled) {
+  border-color: #06b6d4;
+  box-shadow: 0 12px 24px rgba(8, 181, 207, 0.1);
+  transform: translateY(-1px);
+}
+.opendosm-dataset-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.opendosm-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #06b6d4;
+  flex-shrink: 0;
+}
+.opendosm-ds-info {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.opendosm-ds-name {
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.25;
+}
+.opendosm-ds-desc {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 400;
+  line-height: 1.45;
+}
+.opendosm-ds-action {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #ecfeff;
+  color: #0891b2;
+  flex: 0 0 auto;
+}
+.opendosm-connect-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  color: #0e7490;
+  font-weight: 650;
+}
+
+.opendosm-download-popup {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 220;
+  width: min(390px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid #dbe5ea;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.2);
+}
+
+.opendosm-download-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.opendosm-download-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #e8f6f8;
+  color: #087f95;
+}
+
+.opendosm-download-head div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.opendosm-download-head strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.opendosm-download-head div > span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.opendosm-download-head button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+}
+
+.opendosm-download-head button:hover { background: #f1f5f9; color: #0f172a; }
+
+.opendosm-download-track {
+  height: 5px;
+  margin-top: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.opendosm-download-track span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: #0891b2;
+  animation: opendosm-download-progress 1.25s ease-in-out infinite;
+}
+
+.opendosm-download-popup.completed { border-color: #bbf7d0; }
+.opendosm-download-popup.completed .opendosm-download-icon { background: #dcfce7; color: #15803d; }
+.opendosm-download-popup.completed .opendosm-download-track span { width: 100%; background: #22c55e; animation: none; }
+.opendosm-download-popup.failed { border-color: #fecaca; }
+.opendosm-download-popup.failed .opendosm-download-icon { background: #fee2e2; color: #dc2626; }
+.opendosm-download-popup.failed .opendosm-download-track span { width: 100%; background: #ef4444; animation: none; }
+
+.opendosm-download-popup p {
+  margin: 9px 0 0;
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+@keyframes opendosm-download-progress {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(75%); }
+  100% { transform: translateX(240%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opendosm-download-track span { animation: none; width: 65%; }
+}
+
+@media (max-width: 640px) {
+  .opendosm-download-popup { right: 16px; bottom: 16px; }
+}
+
+@media (max-width: 980px) {
+  .opendosm-dataset-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .opendosm-panel {
+    padding: 14px;
+  }
+
+  .opendosm-dataset-list {
+    grid-template-columns: 1fr;
+  }
+
+  .opendosm-panel-head {
+    align-items: flex-start;
+  }
+}

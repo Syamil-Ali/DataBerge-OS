@@ -1,5 +1,5 @@
-import { Component, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Database, EllipsisVertical, FileText, Link2, Loader, LogOut, MessageSquare, RefreshCw, Trash2, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Database, EllipsisVertical, FileText, Link2, Loader, LogOut, Menu, MessageSquare, RefreshCw, Trash2, UserRound, X } from 'lucide-react';
 
 import { ChatExplorer } from './components/ChatExplorer';
 import { LandingPage, type LandingStep } from './components/LandingPage';
@@ -11,6 +11,8 @@ import { Artifact, ChatAttachment, Dataset, Overview, Project, RelationalSchema,
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { AppRoute, Navigate, useAppRoute } from './routing/useAppRoute';
 import {
   addChatAttachment,
   reportAttachment,
@@ -20,48 +22,8 @@ import {
 } from './utils/workspace';
 
 type Tab = 'profile' | 'chat' | 'report' | 'datamodel';
-type AppRoute = 'main' | 'login' | 'signup' | 'upload' | 'workspace';
-
-const routePath = (route: AppRoute) => (route === 'main' ? '/main' : `/${route}`);
-
-const normalizeRoute = (pathname: string): AppRoute => {
-  const clean = pathname.replace(/\/+$/, '') || '/';
-  if (clean === '/' || clean === '/main') return 'main';
-  if (clean === '/login') return 'login';
-  if (clean === '/signup') return 'signup';
-  if (clean === '/upload') return 'upload';
-  if (clean === '/workspace') return 'workspace';
-  return 'main';
-};
-
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>(() => normalizeRoute(window.location.pathname));
-
-  const navigate = useCallback((nextRoute: AppRoute, options?: { replace?: boolean }) => {
-    const nextPath = routePath(nextRoute);
-    if (window.location.pathname !== nextPath) {
-      if (options?.replace) {
-        window.history.replaceState(null, '', nextPath);
-      } else {
-        window.history.pushState(null, '', nextPath);
-      }
-    }
-    setRoute(nextRoute);
-  }, []);
-
-  useEffect(() => {
-    const handlePopState = () => setRoute(normalizeRoute(window.location.pathname));
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    const clean = window.location.pathname.replace(/\/+$/, '') || '/';
-    const canonicalPath = routePath(route);
-    if (clean !== canonicalPath) {
-      window.history.replaceState(null, '', canonicalPath);
-    }
-  }, [route]);
+  const [route, navigate] = useAppRoute();
 
   return (
     <AuthProvider>
@@ -72,32 +34,7 @@ export default function App() {
   );
 }
 
-class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  state: { error: Error | null } = { error: null };
-
-  static getDerivedStateFromError(error: Error) {
-    return { error };
-  }
-
-  componentDidCatch(error: Error) {
-    console.error('Data-Berge render error', error);
-  }
-
-  render() {
-    if (this.state.error) {
-      return (
-        <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 24 }}>
-          <div className="error-banner" style={{ maxWidth: 720 }}>
-            Something on this page could not render: {this.state.error.message || 'Unexpected UI payload.'}
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-function AppShell({ route, navigate }: { route: AppRoute; navigate: (route: AppRoute, options?: { replace?: boolean }) => void }) {
+function AppShell({ route, navigate }: { route: AppRoute; navigate: Navigate }) {
   const { user, loading, logout } = useAuth();
 
   useEffect(() => {
@@ -111,7 +48,7 @@ function AppShell({ route, navigate }: { route: AppRoute; navigate: (route: AppR
     }
   }, [loading, navigate, route, user]);
 
-  if (loading) return <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}><Loader className="spinner" /></div>;
+  if (loading) return <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}><Loader className="spinner" /></div>;
   if (route === 'main') {
     return (
       <LandingPage
@@ -172,6 +109,7 @@ function AuthenticatedApp({
     name: string;
   } | null>(null);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [reviewReturnStep, setReviewReturnStep] = useState<LandingStep>('setup');
   const [pendingReportPlan, setPendingReportPlan] = useState<ReportPlan | null>(null);
@@ -422,7 +360,7 @@ function AuthenticatedApp({
 
   if (!loaded) {
     return (
-      <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+      <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}>
         <Loader className="spinner" />
       </div>
     );
@@ -554,7 +492,7 @@ function AuthenticatedApp({
         </div>
       )}
       <div className="app-layout">
-        <aside className="sidebar">
+        <aside className={`sidebar ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
           <div className="sidebar-brand">
             <div className="brand-mark" aria-hidden="true">
               <img src="/favicon.svg" alt="" />
@@ -564,12 +502,23 @@ function AuthenticatedApp({
             </div>
           </div>
 
-          <div className="sidebar-section">
+          <button
+            className="mobile-menu-toggle"
+            type="button"
+            onClick={() => setMobileNavOpen((open) => !open)}
+            aria-expanded={mobileNavOpen}
+            aria-controls="dashboard-mobile-menu"
+            aria-label={mobileNavOpen ? 'Close dashboard menu' : 'Open dashboard menu'}
+          >
+            {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          <div className="sidebar-section" id="dashboard-mobile-menu">
             <span className="sidebar-section-label">Main</span>
             <nav className="sidebar-nav">
               <button
                 className={activeTab === 'profile' ? 'active' : ''}
-                onClick={() => setActiveTab('profile')}
+                onClick={() => { setActiveTab('profile'); setMobileNavOpen(false); }}
                 disabled={!canShowDataPulse}
                 title={!canShowDataPulse ? 'Upload a dataset to enable' : undefined}
               >
@@ -578,7 +527,7 @@ function AuthenticatedApp({
               </button>
               <button
                 className={activeTab === 'chat' ? 'active' : ''}
-                onClick={() => setActiveTab('chat')}
+                onClick={() => { setActiveTab('chat'); setMobileNavOpen(false); }}
                 disabled={!activeDatasetForTools}
                 title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : undefined}
               >
@@ -587,7 +536,7 @@ function AuthenticatedApp({
               </button>
               <button
                 className={activeTab === 'report' ? 'active' : ''}
-                onClick={() => setActiveTab('report')}
+                onClick={() => { setActiveTab('report'); setMobileNavOpen(false); }}
                 disabled={!activeDatasetForTools}
                 title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : undefined}
               >
@@ -671,7 +620,7 @@ function AuthenticatedApp({
             </div>
             <button
               className="sidebar-ghost-action"
-              onClick={() => setSignOutDialogOpen(true)}
+              onClick={() => { setMobileNavOpen(false); setSignOutDialogOpen(true); }}
               title="Sign out"
               aria-label="Sign out"
             >
