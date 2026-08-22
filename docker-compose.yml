@@ -121,8 +121,8 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     environment:
       BACKEND_ORIGIN: http://backend:8000
     depends_on:
