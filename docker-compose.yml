@@ -77,8 +77,8 @@ services:
 
   migrate:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     environment: *backend-environment
     command: ["python", "-m", "scripts.migrate"]
     depends_on:
@@ -92,8 +92,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
       <<: *backend-environment
       CORS_ALLOW_ORIGINS: http://localhost:8080
@@ -108,8 +108,8 @@ services:
 
   worker:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     environment: *backend-environment
     command: ["python", "-m", "scripts.worker"]
     depends_on:

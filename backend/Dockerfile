@@ -7,14 +7,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DB_PATH=/data/app.db
 
 WORKDIR /app
-COPY backend/requirements.lock.txt ./requirements.lock.txt
+COPY requirements.lock.txt ./requirements.lock.txt
 RUN pip install --no-cache-dir --require-hashes -r requirements.lock.txt
 
-COPY backend/app ./app
-COPY backend/data_berge_core ./data_berge_core
-COPY backend/scripts ./scripts
-COPY backend/run.py ./run.py
-COPY backend/entrypoint.sh ./entrypoint.sh
+COPY app ./app
+COPY data_berge_core ./data_berge_core
+COPY scripts ./scripts
+COPY run.py ./run.py
+COPY entrypoint.sh ./entrypoint.sh
 
 RUN addgroup --system --gid 10001 appgroup \
     && adduser --system --uid 10001 --ingroup appgroup appuser \

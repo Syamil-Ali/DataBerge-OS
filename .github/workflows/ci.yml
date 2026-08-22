@@ -104,5 +104,5 @@ jobs:
     needs: [backend, frontend, distributed-integration]
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f backend/Dockerfile -t data-berge-backend .
+      - run: docker build -f backend/Dockerfile -t data-berge-backend backend
       - run: docker build -f frontend/Dockerfile -t data-berge-frontend frontend
