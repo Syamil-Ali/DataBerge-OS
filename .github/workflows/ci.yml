@@ -14,8 +14,8 @@ jobs:
     timeout-minutes: 20
     env:
       APP_ENV: test
-      DATA_DIR: ${{ runner.temp }}/data
-      DB_PATH: ${{ runner.temp }}/data/app.db
+      DATA_DIR: /tmp/data-berge-ci/backend-data
+      DB_PATH: /tmp/data-berge-ci/backend-data/app.db
       MLFLOW_TRACKING_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 20
     env:
       APP_ENV: test
-      DATA_DIR: ${{ runner.temp }}/distributed-data
+      DATA_DIR: /tmp/data-berge-ci/distributed-data
       DATABASE_URL: postgresql://data_berge:data_berge_dev@localhost:15432/data_berge
       REDIS_URL: redis://localhost:6380/0
       QUEUE_MODE: redis
@@ -105,4 +105,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f backend/Dockerfile -t data-berge-backend .
-      - run: docker build -f frontend/Dockerfile -t data-berge-frontend .
+      - run: docker build -f frontend/Dockerfile -t data-berge-frontend frontend
