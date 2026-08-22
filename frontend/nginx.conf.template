@@ -2,6 +2,7 @@ server {
     listen 8080;
     server_name _;
     server_tokens off;
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
     root /usr/share/nginx/html;
     index index.html;
 
@@ -18,7 +19,8 @@ server {
     }
 
     location /api/ {
-        proxy_pass ${BACKEND_ORIGIN}/api/;
+        set $backend_origin ${BACKEND_ORIGIN};
+        proxy_pass $backend_origin;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
