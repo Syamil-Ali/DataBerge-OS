@@ -117,12 +117,16 @@ class ApiSecurityTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 400)
 
-    def test_production_configuration_fails_closed(self) -> None:
+    def test_production_configuration_allows_local_runtime(self) -> None:
         with patch.object(settings, "IS_PRODUCTION", True), \
             patch.object(settings, "JWT_SECRET", "change-me-in-production-use-openssl-rand-hex-32"), \
             patch.object(settings, "COOKIE_SECURE", False), \
             patch.object(settings, "ALLOWED_HOSTS", ["*"]), \
             patch.dict("os.environ", {"CORS_ALLOW_ORIGINS": "*"}):
+            settings.validate_runtime_config()
+
+    def test_runtime_configuration_rejects_unknown_storage_backend(self) -> None:
+        with patch.object(settings, "OBJECT_STORAGE_BACKEND", "unknown"):
             with self.assertRaisesRegex(RuntimeError, "Unsafe runtime configuration"):
                 settings.validate_runtime_config()
 

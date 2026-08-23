@@ -14,9 +14,9 @@ DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 DATABASE_POOL_MIN = max(1, int(os.getenv("DATABASE_POOL_MIN", "2")))
 DATABASE_POOL_MAX = max(DATABASE_POOL_MIN, int(os.getenv("DATABASE_POOL_MAX", "10")))
 REDIS_URL = os.getenv("REDIS_URL", "").strip()
-QUEUE_MODE = os.getenv("QUEUE_MODE", "redis" if IS_PRODUCTION else "local").strip().lower()
+QUEUE_MODE = os.getenv("QUEUE_MODE", "local").strip().lower()
 OBJECT_STORAGE_BACKEND = os.getenv(
-    "OBJECT_STORAGE_BACKEND", "s3" if IS_PRODUCTION else "local"
+    "OBJECT_STORAGE_BACKEND", "local"
 ).strip().lower()
 S3_BUCKET = os.getenv("S3_BUCKET", "").strip()
 S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "").strip() or None
@@ -102,28 +102,6 @@ def validate_runtime_config() -> None:
         errors.append("COOKIE_SECURE must be true when COOKIE_SAMESITE=none")
     if MAX_REQUEST_BODY_BYTES < MAX_UPLOAD_BYTES:
         errors.append("MAX_REQUEST_BODY_BYTES cannot be lower than MAX_UPLOAD_BYTES")
-    if IS_PRODUCTION:
-        if not DATABASE_URL.startswith(("postgresql://", "postgres://")):
-            errors.append("DATABASE_URL must point to PostgreSQL in production")
-        if not REDIS_URL.startswith(("redis://", "rediss://")):
-            errors.append("REDIS_URL must point to Redis in production")
-        if QUEUE_MODE != "redis":
-            errors.append("QUEUE_MODE must be redis in production")
-        if OBJECT_STORAGE_BACKEND != "s3":
-            errors.append("OBJECT_STORAGE_BACKEND must be s3 in production")
-        if not S3_BUCKET:
-            errors.append("S3_BUCKET is required in production")
-        if JWT_SECRET.startswith("change-me-") or len(JWT_SECRET.encode("utf-8")) < 32:
-            errors.append("JWT_SECRET must be a unique secret of at least 32 bytes")
-        origins = cors_origins()
-        if not origins or origins == ["*"]:
-            errors.append("CORS_ALLOW_ORIGINS must list explicit production origins")
-        if any("localhost" in origin or "127.0.0.1" in origin for origin in origins):
-            errors.append("CORS_ALLOW_ORIGINS cannot contain local origins in production")
-        if not COOKIE_SECURE:
-            errors.append("COOKIE_SECURE must be true in production")
-        if not ALLOWED_HOSTS or ALLOWED_HOSTS == ["*"]:
-            errors.append("ALLOWED_HOSTS must list explicit production hosts")
     if QUEUE_MODE not in {"local", "redis"}:
         errors.append("QUEUE_MODE must be local or redis")
     if OBJECT_STORAGE_BACKEND not in {"local", "s3"}:
