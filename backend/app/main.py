@@ -16,7 +16,7 @@ from app.api.opendosm import shutdown_connector_queue
 from app.settings import ALLOWED_HOSTS, APP_NAME, MAX_REQUEST_BODY_BYTES, cors_origins, validate_runtime_config
 from app import settings
 from app.storage.database import assert_schema_current, health_check, init_db, reconcile_storage_usage, recover_interrupted_jobs
-from app.storage.connections import close_pool
+from app.storage.connections import close_pool, uses_postgres
 from app.services.redis_runtime import close_redis
 from app.services.telemetry import configure_telemetry
 
@@ -25,7 +25,10 @@ from app.services.telemetry import configure_telemetry
 async def lifespan(_: FastAPI):
     validate_runtime_config()
     logging.getLogger("data_berge.http").setLevel(logging.INFO)
-    if settings.AUTO_MIGRATE:
+    # Railway mounts persistent volumes only for the deployed container, not the
+    # pre-deploy command. A local SQLite database must therefore be initialized
+    # after the volume is mounted. PostgreSQL can still use the pre-deploy gate.
+    if settings.AUTO_MIGRATE or not uses_postgres():
         init_db()
     else:
         assert_schema_current()
