@@ -38,6 +38,21 @@ type SampleLandingPageProps = {
 
 export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: SampleLandingPageProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navFilled, setNavFilled] = useState(false);
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setNavFilled(entry.intersectionRatio < 0.92),
+      { threshold: [0.92] },
+    );
+
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
@@ -45,7 +60,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       style={{ fontFamily: "'DM Sans', sans-serif", backgroundColor: "#F8FAFC", color: "#172033" }}
     >
       {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#172033]/88 backdrop-blur-xl md:border-b md:border-white/5">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-700 ease-out ${navFilled ? "bg-[#172033]/92 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-[#08111d]/10" : "bg-transparent border-b border-transparent shadow-none"}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <a href="#" className="flex items-center gap-2.5 group">
@@ -103,7 +118,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative min-h-[100dvh] bg-[#172033] overflow-hidden pt-16">
+      <section ref={heroRef} className="relative min-h-[100dvh] bg-[#172033] overflow-hidden pt-16">
         <img
           src="/data-berge-hero-wide.webp"
           alt="Iceberg above and below the waterline"
