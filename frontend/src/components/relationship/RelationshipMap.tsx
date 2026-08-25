@@ -1,19 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, GitBranch, Link2, Link2Off, Plus, Table2, Trash2, WandSparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, GitBranch, Link2, Link2Off, Plus, Table2, Trash2 } from 'lucide-react';
 
-import { ModelTransformation, RelationalRelationship, RelationalSchema, RelationalTable } from '../../types/domain';
-import { formatText } from '../../utils/format';
-import {
-  applyDictionaryMapping,
-  DictionaryCandidatesResponse,
-  DictionaryMapping,
-  DictionaryPreviewResponse,
-  getDictionaryCandidates,
-  getRelationalTablePreview,
-  previewDictionaryMapping,
-  RelationalTablePreview,
-  updateRelationalSchema,
-} from '../../services/api';
+import { RelationalRelationship, RelationalTable } from '../../types/domain';
 
 const relationshipKey = (rel: RelationalRelationship) =>
   rel.id ?? `${rel.from_table}.${rel.from_column}->${rel.to_table}.${rel.to_column}`;

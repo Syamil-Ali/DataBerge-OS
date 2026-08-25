@@ -1,19 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, GitBranch, Link2, Link2Off, Plus, Table2, Trash2, WandSparkles } from 'lucide-react';
+import { useState } from 'react';
+import { WandSparkles } from 'lucide-react';
 
-import { ModelTransformation, RelationalRelationship, RelationalSchema, RelationalTable } from '../../types/domain';
-import { formatText } from '../../utils/format';
-import {
-  applyDictionaryMapping,
-  DictionaryCandidatesResponse,
-  DictionaryMapping,
-  DictionaryPreviewResponse,
-  getDictionaryCandidates,
-  getRelationalTablePreview,
-  previewDictionaryMapping,
-  RelationalTablePreview,
-  updateRelationalSchema,
-} from '../../services/api';
+import { ModelTransformation, RelationalSchema } from '../../types/domain';
+import { updateRelationalSchema } from '../../services/api';
 export function EngineeringRecommendations({
   schema,
   projectId,

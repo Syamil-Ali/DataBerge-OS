@@ -1,4 +1,4 @@
-export function formatNumber(value: number, maximumFractionDigits = 2) {
+function formatNumber(value: number, maximumFractionDigits = 2) {
   return value.toLocaleString(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits,

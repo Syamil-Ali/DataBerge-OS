@@ -25,7 +25,7 @@ export type ReportProgress = {
   sections?: { key: string; label: string; status: string }[];
 };
 
-export function getReportProgress(report: Artifact): ReportProgress | null {
+function getReportProgress(report: Artifact): ReportProgress | null {
   const progress = report.payload?.report_progress;
   return progress && typeof progress === 'object' ? progress as ReportProgress : null;
 }
@@ -35,7 +35,7 @@ export function isReportGenerating(report: Artifact) {
   return report.status === 'generating' || progress?.status === 'queued' || progress?.status === 'running';
 }
 
-export function formatReportDate(value?: string) {
+function formatReportDate(value?: string) {
   if (!value) return 'Date unavailable';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -46,7 +46,7 @@ export function formatReportDate(value?: string) {
   }).format(date);
 }
 
-export function reportTypeLabel(report: Artifact) {
+function reportTypeLabel(report: Artifact) {
   const explicit = String(report.payload?.report_type || '').trim();
   if (explicit) return explicit;
   const template = String(report.payload?.template || '').trim();

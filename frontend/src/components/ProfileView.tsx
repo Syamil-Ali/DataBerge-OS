@@ -22,8 +22,8 @@ import { formatPercent, formatPValue, formatRange, formatText, formatValue } fro
 import { formatColumnChartContext } from '../utils/chartContext';
 import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
-import { InfoTooltip } from './InfoTooltip';
 import { SchemaProfileView } from './SchemaProfileView';
+import { WorkspacePageHeader } from './WorkspacePageHeader';
 
 type ProfileViewProps = {
   dataset: Dataset | null;
@@ -313,15 +313,10 @@ export function ProfileView({ dataset, schema, onAskInChat }: ProfileViewProps) 
   return (
     <section className="profile-view data-pulse-view">
       <div className="data-pulse-sticky-header">
-        <div className="section-title tab-header">
-          <div>
-            <div className="section-title-row">
-              <h2>Data Pulse</h2>
-              <InfoTooltip text="Understand what is in this dataset, spot issues, and choose what to explore next." />
-            </div>
-          </div>
-          <div className="header-actions">
-            {onAskInChat ? (
+        <WorkspacePageHeader
+          title="Data Pulse"
+          description="Understand what is in this dataset, spot issues, and choose what to explore next."
+          actions={onAskInChat ? (
               <button
                 className="profile-export-btn"
                 type="button"
@@ -330,10 +325,8 @@ export function ProfileView({ dataset, schema, onAskInChat }: ProfileViewProps) 
                 <Bot size={14} />
                 Ask in Explorer
               </button>
-            ) : null}
-          </div>
-        </div>
-        <div className="section-divider" />
+          ) : null}
+        />
       </div>
 
       <div className="data-pulse-scroll-content">

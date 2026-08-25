@@ -23,8 +23,9 @@ import {
   listCustomReportTypes,
   updateCustomReportType,
 } from '../services/api';
-import { InfoTooltip } from './InfoTooltip';
 import { Artifact, CustomReportType, Dataset, Project, ReportPlan, ReportSectionKind, ReportTypeSection } from '../types/domain';
+import { SegmentedTabs } from './SegmentedTabs';
+import { WorkspacePageHeader } from './WorkspacePageHeader';
 import {
   draftFromPlan,
   draftFromType,
@@ -311,39 +312,21 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
 
   return (
     <section className="report-panel report-workspace-page">
-      <div className="section-title tab-header">
-        <div>
-          <div className="section-title-row">
-            <h2>Executive Report</h2>
-            <InfoTooltip text="Engineer validates readiness, Analyst establishes evidence, and Reporter composes the final document." />
-          </div>
-        </div>
-      </div>
-      <div className="section-divider" />
+      <WorkspacePageHeader
+        title="Executive Report"
+        description="Engineer validates readiness, Analyst establishes evidence, and Reporter composes the final document."
+      />
 
-      <div className="report-mobile-tabs" role="tablist" aria-label="Executive Report sections">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mobileReportPane === 'create'}
-          className={mobileReportPane === 'create' ? 'active' : ''}
-          onClick={() => setMobileReportPane('create')}
-        >
-          <FilePlus2 size={15} />
-          Create Report
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mobileReportPane === 'library'}
-          className={mobileReportPane === 'library' ? 'active' : ''}
-          onClick={() => setMobileReportPane('library')}
-        >
-          <Library size={15} />
-          Library
-          <span>{reports.length}</span>
-        </button>
-      </div>
+      <SegmentedTabs
+        className="report-mobile-tabs"
+        label="Executive Report sections"
+        value={mobileReportPane}
+        onChange={setMobileReportPane}
+        tabs={[
+          { value: 'create', label: 'Create Report', icon: <FilePlus2 size={15} /> },
+          { value: 'library', label: 'Library', icon: <Library size={15} />, badge: reports.length },
+        ]}
+      />
 
       <div className={`report-workspace-layout mobile-pane-${mobileReportPane}`}>
         <aside className="report-compose-panel">

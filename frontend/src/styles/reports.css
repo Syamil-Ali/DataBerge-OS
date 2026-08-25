@@ -1371,8 +1371,7 @@
 
 .report-exec-stack,
 .report-system-list,
-.report-finding-list,
-.report-prognosis {
+.report-finding-list {
   display: grid;
   gap: 12px;
 }
@@ -1381,8 +1380,7 @@
 .report-story-card,
 .report-sbar-card,
 .report-action-card,
-.report-system-card,
-.report-prognosis-card {
+.report-system-card {
   border: 1px solid var(--db-border-soft);
   border-radius: 8px;
   background: #ffffff;
@@ -1401,7 +1399,6 @@
 .report-sbar-card header,
 .report-finding-head,
 .report-reference-type,
-.report-segmented,
 .report-pill {
   display: flex;
   align-items: center;
@@ -1424,7 +1421,6 @@
 
 .report-exec-theme p,
 .report-prose p,
-.report-prognosis-card p,
 .report-detail-block p {
   margin: 0;
   color: #475569;
@@ -1861,56 +1857,6 @@
 
 .report-score-track {
   margin-top: 10px;
-}
-
-.report-segmented {
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.report-segmented button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 32px;
-  border: 1px solid var(--db-border-soft);
-  border-radius: 7px;
-  background: #ffffff;
-  color: #64748b;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.report-segmented button.active.danger {
-  border-color: #fecaca;
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.report-segmented button.active.success {
-  border-color: #bbf7d0;
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.report-prognosis-card {
-  padding: 14px;
-}
-
-.report-prognosis-card.current {
-  background: #fef2f2;
-  border-color: #fecaca;
-}
-
-.report-prognosis-card.recommended {
-  background: #ecfdf5;
-  border-color: #bbf7d0;
-}
-
-.report-prognosis-card p {
-  margin-top: 9px;
 }
 
 /* Tame the generated Executive Summary subcomponent without changing its data contract. */
@@ -2817,7 +2763,7 @@
 
 .report-workspace-page :is(
   .report-progress-steps span.completed, .report-action-card.later,
-  .report-pill.confidence.high, .report-segmented button.active.success
+  .report-pill.confidence.high
 ) {
   border-color: var(--report-blue-border);
   background: var(--report-blue-soft);
@@ -3841,7 +3787,7 @@
 
 .report-workspace-page :is(
   .report-progress-steps span.completed, .report-action-card.later,
-  .report-pill.confidence.high, .report-segmented button.active.success
+  .report-pill.confidence.high
 ) {
   border-color: #bfeef4;
   background: #eaf9fc;

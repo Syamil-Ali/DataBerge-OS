@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, GitBranch, Link2, Link2Off, Plus, Table2, Trash2, WandSparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Check, WandSparkles } from 'lucide-react';
 
-import { ModelTransformation, RelationalRelationship, RelationalSchema, RelationalTable } from '../../types/domain';
-import { formatText } from '../../utils/format';
+import { ModelTransformation, RelationalSchema, RelationalTable } from '../../types/domain';
 import {
-  applyDictionaryMapping,
-  DictionaryCandidatesResponse,
-  DictionaryMapping,
-  DictionaryPreviewResponse,
-  getDictionaryCandidates,
   getRelationalTablePreview,
-  previewDictionaryMapping,
   RelationalTablePreview,
   updateRelationalSchema,
 } from '../../services/api';

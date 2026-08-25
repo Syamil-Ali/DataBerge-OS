@@ -75,7 +75,7 @@ export type ReportTypeDraft = {
   is_default: boolean;
 };
 
-export function sectionKindForKey(key: string): ReportSectionKind {
+function sectionKindForKey(key: string): ReportSectionKind {
   if (key === 'charts') return 'chart';
   if (key === 'key_metrics') return 'metrics';
   if (key === 'findings' || key === 'top_findings') return 'findings';
@@ -84,7 +84,7 @@ export function sectionKindForKey(key: string): ReportSectionKind {
   return 'narrative';
 }
 
-export function sectionsFromTemplate(template: string): ReportTypeSection[] {
+function sectionsFromTemplate(template: string): ReportTypeSection[] {
   return (TEMPLATE_BLOCKS[template] || TEMPLATE_BLOCKS.executive).map((block) => ({
     key: block.key,
     label: block.label,

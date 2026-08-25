@@ -1,30 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ArrowRight,
   Check,
   Columns3,
   GitBranch,
-  Link2,
-  Link2Off,
-  Plus,
   Table2,
-  Trash2,
   WandSparkles,
 } from 'lucide-react';
 
-import { ModelTransformation, RelationalRelationship, RelationalSchema, RelationalTable } from '../types/domain';
-import { formatText } from '../utils/format';
-import {
-  applyDictionaryMapping,
-  DictionaryCandidatesResponse,
-  DictionaryMapping,
-  DictionaryPreviewResponse,
-  getDictionaryCandidates,
-  getRelationalTablePreview,
-  previewDictionaryMapping,
-  RelationalTablePreview,
-  updateRelationalSchema,
-} from '../services/api';
+import { RelationalRelationship, RelationalSchema } from '../types/domain';
+import { updateRelationalSchema } from '../services/api';
 
 type Props = {
   schema: RelationalSchema;
@@ -40,14 +24,6 @@ type EditorTab = 'relationships' | 'preview' | 'dictionary' | 'engineering';
 const relationshipKey = (rel: RelationalRelationship) =>
   rel.id ?? `${rel.from_table}.${rel.from_column}->${rel.to_table}.${rel.to_column}`;
 
-const methodLabel = (method: string) => {
-  if (method.includes('explicit')) return 'PK/FK label';
-  if (method.includes('table_name')) return 'Table-name match';
-  if (method.includes('value')) return 'Value coverage';
-  if (method.includes('name_match_id')) return 'ID name match';
-  if (method.includes('manual')) return 'Manual';
-  return 'Name match';
-};
 import { RelationshipMap } from './relationship/RelationshipMap';
 import { DataDictionaryMapper } from './relationship/DataDictionaryMapper';
 import { DataPreviewEditor } from './relationship/DataPreviewEditor';
