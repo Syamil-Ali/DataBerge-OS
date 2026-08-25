@@ -19,7 +19,7 @@ server {
     }
 
     location /api/ {
-        set $backend_origin ${BACKEND_ORIGIN};
+        set $backend_origin ${BACKEND_URL};
         proxy_pass $backend_origin;
         proxy_http_version 1.1;
         proxy_ssl_server_name on;
