@@ -2924,6 +2924,10 @@
   padding-top: 20px;
 }
 
+.report-mobile-tabs {
+  display: none;
+}
+
 .report-compose-panel {
   position: sticky;
   top: 16px;

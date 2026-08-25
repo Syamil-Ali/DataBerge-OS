@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Database, EllipsisVertical, FileText, Link2, Loader, LogOut, Menu, MessageSquare, RefreshCw, Trash2, UserRound, X } from 'lucide-react';
+import { Database, EllipsisVertical, FileText, Link2, Loader, LogOut, Menu, MessageSquare, PanelLeftClose, PanelLeftOpen, RefreshCw, Trash2, UserRound, X } from 'lucide-react';
 
 import { ChatExplorer } from './components/ChatExplorer';
 import { LandingPage, type LandingStep } from './components/LandingPage';
@@ -110,6 +110,7 @@ function AuthenticatedApp({
   } | null>(null);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [reviewReturnStep, setReviewReturnStep] = useState<LandingStep>('setup');
   const [pendingReportPlan, setPendingReportPlan] = useState<ReportPlan | null>(null);
@@ -118,6 +119,7 @@ function AuthenticatedApp({
   const [chatAttachments, setChatAttachments] = useState<ChatAttachment[]>([]);
   const MAX_ATTACHMENTS = 3;
   const datasetMenuRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLElement | null>(null);
 
   const selectedDataset = useMemo<Dataset | null>(() => {
     if (!overview || !selectedDatasetId) return null;
@@ -134,6 +136,20 @@ function AuthenticatedApp({
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const closeMobileMenu = (event: PointerEvent) => {
+      if (!sidebarRef.current?.contains(event.target as Node)) {
+        setMobileNavOpen(false);
+        setDatasetMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeMobileMenu);
+    return () => document.removeEventListener('pointerdown', closeMobileMenu);
+  }, [mobileNavOpen]);
 
   const load = async (
     preferredDatasetId: string | null | undefined = undefined,
@@ -491,8 +507,8 @@ function AuthenticatedApp({
           </div>
         </div>
       )}
-      <div className="app-layout">
-        <aside className={`sidebar ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
+      <div className={`app-layout ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
+        <aside ref={sidebarRef} className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
           <div className="sidebar-brand">
             <div className="brand-mark" aria-hidden="true">
               <img src="/favicon.svg" alt="" />
@@ -501,6 +517,16 @@ function AuthenticatedApp({
               <strong>Data-Berge</strong>
             </div>
           </div>
+
+          <button
+            className="sidebar-collapse-toggle"
+            type="button"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </button>
 
           <button
             className="mobile-menu-toggle"
@@ -513,6 +539,7 @@ function AuthenticatedApp({
             {mobileNavOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
+          <div className="sidebar-mobile-panel">
           <div className="sidebar-section" id="dashboard-mobile-menu">
             <span className="sidebar-section-label">Main</span>
             <nav className="sidebar-nav">
@@ -520,7 +547,7 @@ function AuthenticatedApp({
                 className={activeTab === 'profile' ? 'active' : ''}
                 onClick={() => { setActiveTab('profile'); setMobileNavOpen(false); }}
                 disabled={!canShowDataPulse}
-                title={!canShowDataPulse ? 'Upload a dataset to enable' : undefined}
+                title={!canShowDataPulse ? 'Upload a dataset to enable' : sidebarCollapsed ? 'Data Pulse' : undefined}
               >
                 <Database size={18} />
                 <span>Data Pulse</span>
@@ -529,7 +556,7 @@ function AuthenticatedApp({
                 className={activeTab === 'chat' ? 'active' : ''}
                 onClick={() => { setActiveTab('chat'); setMobileNavOpen(false); }}
                 disabled={!activeDatasetForTools}
-                title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : undefined}
+                title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : sidebarCollapsed ? 'Explorer' : undefined}
               >
                 <MessageSquare size={18} />
                 <span>Explorer</span>
@@ -538,7 +565,7 @@ function AuthenticatedApp({
                 className={activeTab === 'report' ? 'active' : ''}
                 onClick={() => { setActiveTab('report'); setMobileNavOpen(false); }}
                 disabled={!activeDatasetForTools}
-                title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : undefined}
+                title={!activeDatasetForTools ? 'Upload a dataset or schema to enable.' : sidebarCollapsed ? 'Executive Report' : undefined}
               >
                 <FileText size={18} />
                 <span>Executive Report</span>
@@ -550,7 +577,7 @@ function AuthenticatedApp({
 
           <div className="sidebar-section sidebar-dataset-card">
             <span className="sidebar-section-label">Active Dataset</span>
-            <div className="dataset-summary-card">
+            <div className={`dataset-summary-card ${datasetMenuOpen ? 'menu-open' : ''}`}>
               <div className="dataset-summary">
                 {showingSchemaSummary && activeSchema ? (
                   <>
@@ -562,7 +589,7 @@ function AuthenticatedApp({
                   </>
                 ) : null}
               </div>
-              <div className="dataset-menu-shell" ref={datasetMenuRef}>
+              <div className={`dataset-menu-shell ${datasetMenuOpen ? 'menu-open' : ''}`} ref={datasetMenuRef}>
                 <button
                   className="dataset-inline-action"
                   onClick={() => setDatasetMenuOpen((open) => !open)}
@@ -609,7 +636,7 @@ function AuthenticatedApp({
           </div>
 
           <div className="sidebar-bottom-user">
-            <div className="sidebar-user-card">
+            <div className="sidebar-user-card" title={sidebarCollapsed ? userName : undefined}>
               <div className="sidebar-user-avatar" aria-hidden="true">
                 <UserRound size={14} />
               </div>
@@ -626,6 +653,7 @@ function AuthenticatedApp({
             >
               <LogOut size={14} />
             </button>
+          </div>
           </div>
         </aside>
 

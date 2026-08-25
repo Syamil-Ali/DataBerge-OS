@@ -23,6 +23,7 @@ import {
   listCustomReportTypes,
   updateCustomReportType,
 } from '../services/api';
+import { InfoTooltip } from './InfoTooltip';
 import { Artifact, CustomReportType, Dataset, Project, ReportPlan, ReportSectionKind, ReportTypeSection } from '../types/domain';
 import {
   draftFromPlan,
@@ -72,6 +73,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
   const [sendBusy, setSendBusy] = useState<string | null>(null);
   const [returnToChatOnClose, setReturnToChatOnClose] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [mobileReportPane, setMobileReportPane] = useState<'create' | 'library'>('create');
 
   const hasGeneratingReports = reports.some(isReportGenerating);
   const activeCustomType = customTypes.find((reportType) => selectedType === `custom:${reportType.id}`) || null;
@@ -251,6 +253,7 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
         custom_blocks: activeCustomType?.payload.sections || null,
       });
       onChanged();
+      setMobileReportPane('library');
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'Report generation failed.');
     } finally {
@@ -310,15 +313,39 @@ export function ReportBuilder({ project, dataset, reports, onChanged, onSendToCh
     <section className="report-panel report-workspace-page">
       <div className="section-title tab-header">
         <div>
-          <h2>Executive Report</h2>
-          <p className="section-subcopy">
-            Engineer validates readiness, Analyst establishes evidence, and Reporter composes the final document.
-          </p>
+          <div className="section-title-row">
+            <h2>Executive Report</h2>
+            <InfoTooltip text="Engineer validates readiness, Analyst establishes evidence, and Reporter composes the final document." />
+          </div>
         </div>
       </div>
       <div className="section-divider" />
 
-      <div className="report-workspace-layout">
+      <div className="report-mobile-tabs" role="tablist" aria-label="Executive Report sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileReportPane === 'create'}
+          className={mobileReportPane === 'create' ? 'active' : ''}
+          onClick={() => setMobileReportPane('create')}
+        >
+          <FilePlus2 size={15} />
+          Create Report
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileReportPane === 'library'}
+          className={mobileReportPane === 'library' ? 'active' : ''}
+          onClick={() => setMobileReportPane('library')}
+        >
+          <Library size={15} />
+          Library
+          <span>{reports.length}</span>
+        </button>
+      </div>
+
+      <div className={`report-workspace-layout mobile-pane-${mobileReportPane}`}>
         <aside className="report-compose-panel">
           <div className="report-compose-head">
             <span className="report-compose-icon"><FilePlus2 size={17} /></span>

@@ -61,6 +61,14 @@ export function EngineeringRecommendations({
   const averageReadiness = readiness.length
     ? (readiness.reduce((total, score) => total + score, 0) / readiness.length).toFixed(1)
     : null;
+  const readinessValue = averageReadiness ? Number(averageReadiness) : null;
+  const readinessLabel = readinessValue === null
+    ? null
+    : readinessValue >= 8
+      ? 'Ready'
+      : readinessValue >= 6
+        ? 'Review suggested'
+        : 'Preparation needed';
   const operationForAction = (action: string): ModelTransformation['operation'] => {
     const normalized = action.toLowerCase();
     if (normalized.startsWith('normalize null-like')) return 'normalize_null_like';
@@ -112,11 +120,15 @@ export function EngineeringRecommendations({
     <div className="rel-engineering-panel">
       <div className="rel-engineering-hero">
         <div>
-          <span className="rel-editor-label">Data Engineer agent</span>
-          <h4>Transformation recommendations</h4>
-          <p>Review suggestions generated from each table’s profile before changing the working dataset. Source files are never modified automatically.</p>
+          <span className="rel-editor-label">Data preparation check</span>
+          <h4>{readinessLabel === 'Ready' ? 'Your data is ready to analyze' : 'Review suggested improvements'}</h4>
+          <p>Data-Berge checked your tables for structural issues and possible improvements. Any suggested fixes appear below, and nothing changes without your approval.</p>
         </div>
-        {averageReadiness ? <strong className="rel-engineering-score">{averageReadiness}<small>/10 readiness</small></strong> : null}
+        {averageReadiness && readinessLabel ? (
+          <span className="rel-engineering-status">
+            <strong>{readinessLabel}</strong>
+          </span>
+        ) : null}
       </div>
 
       {actionError ? <div className="rel-save-error">{actionError}</div> : null}

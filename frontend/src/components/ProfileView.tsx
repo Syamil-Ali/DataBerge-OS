@@ -22,6 +22,7 @@ import { formatPercent, formatPValue, formatRange, formatText, formatValue } fro
 import { formatColumnChartContext } from '../utils/chartContext';
 import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
+import { InfoTooltip } from './InfoTooltip';
 import { SchemaProfileView } from './SchemaProfileView';
 
 type ProfileViewProps = {
@@ -314,8 +315,10 @@ export function ProfileView({ dataset, schema, onAskInChat }: ProfileViewProps) 
       <div className="data-pulse-sticky-header">
         <div className="section-title tab-header">
           <div>
-            <h2>Data Pulse</h2>
-            <p className="section-subcopy">Dataset context, column profiling, readiness signals, and relationship checks.</p>
+            <div className="section-title-row">
+              <h2>Data Pulse</h2>
+              <InfoTooltip text="Understand what is in this dataset, spot issues, and choose what to explore next." />
+            </div>
           </div>
           <div className="header-actions">
             {onAskInChat ? (
@@ -325,7 +328,7 @@ export function ProfileView({ dataset, schema, onAskInChat }: ProfileViewProps) 
                 onClick={() => onAskInChat('Dataset profile', `Summarize the dataset profile for ${dataset.name}. Rows: ${dataset.row_count}. Columns: ${dataset.column_count}.`)}
               >
                 <Bot size={14} />
-                Ask in chat
+                Ask in Explorer
               </button>
             ) : null}
           </div>

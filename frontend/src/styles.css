@@ -4,6 +4,18 @@
 @import "./styles/workspace.css";
 @import "./styles/reports.css";
 
+/* Keep form-control typography consistent throughout the product. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+textarea,
+select {
+  font-size: 12px !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  font-size: 12px !important;
+}
+
 /* Mobile shell: reflow the desktop sidebar into a compact, stable app header. */
 @media (max-width: 760px) {
   html,
@@ -25,6 +37,29 @@
 
   .app-layout {
     min-height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: start;
+  }
+
+  .app-shell.has-data .app-layout,
+  .app-shell.has-data .app-layout.sidebar-is-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-collapse-toggle {
+    display: none;
+  }
+
+  .app-shell.has-data .sidebar.sidebar-collapsed {
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+  }
+
+  .sidebar-collapsed .brand-copy { display: block; }
+  .sidebar-collapsed .sidebar-nav button span { display: inline; }
+  .sidebar-collapsed .sidebar-user-copy { display: grid; }
+
+  .sidebar.mobile-nav-open.sidebar-collapsed .sidebar-dataset-card {
+    display: grid;
   }
 
   .sidebar {
@@ -60,6 +95,39 @@
     color: #172033;
   }
 
+  .app-shell.has-data .sidebar {
+    position: sticky;
+    top: 0;
+    height: calc(52px + max(8px, env(safe-area-inset-top)));
+    min-height: calc(52px + max(8px, env(safe-area-inset-top)));
+    max-height: calc(52px + max(8px, env(safe-area-inset-top)));
+    padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+    border-radius: 0;
+    border-bottom: 0;
+    background: #101d2d;
+    box-shadow: 0 2px 10px rgba(10, 22, 36, 0.14);
+  }
+
+  .app-shell.has-data .sidebar-brand {
+    height: 44px;
+    align-items: center;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+  }
+
+  .app-shell.has-data .sidebar-brand .brand-copy strong {
+    color: #ffffff;
+  }
+
+  .app-shell.has-data .mobile-menu-toggle {
+    align-self: center;
+    border-color: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+
   #dashboard-mobile-menu {
     grid-column: 1 / -1;
     grid-row: 2;
@@ -67,14 +135,46 @@
     display: none;
   }
 
+  .sidebar-mobile-panel {
+    position: absolute;
+    z-index: 45;
+    top: calc(100% + 8px);
+    right: 10px;
+    left: 10px;
+    display: none;
+    max-height: calc(100dvh - 82px);
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(16, 29, 45, 0.98);
+    box-shadow: 0 24px 60px rgba(5, 14, 25, 0.34);
+    backdrop-filter: blur(18px);
+    overscroll-behavior: contain;
+  }
+
+  .sidebar.mobile-nav-open .sidebar-mobile-panel {
+    display: flex;
+    flex-direction: column;
+    animation: mobile-menu-enter 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes mobile-menu-enter {
+    from { opacity: 0; transform: translateY(-8px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
   .sidebar.mobile-nav-open #dashboard-mobile-menu {
     display: grid;
-    padding-top: 8px;
-    border-top: 1px solid #dbeafe;
+    gap: 8px;
+    padding: 0;
+    border-top: 0;
   }
 
   #dashboard-mobile-menu .sidebar-section-label {
-    display: none;
+    display: block;
+    padding: 2px 4px 0;
+    color: rgba(255, 255, 255, 0.34);
   }
 
   .sidebar-nav {
@@ -87,10 +187,34 @@
   .sidebar-nav button {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
+    min-height: 48px;
     justify-content: flex-start;
-    padding: 0 12px;
+    padding: 0 14px;
+    border-radius: 12px;
     overflow: hidden;
+  }
+
+  .app-shell.has-data .sidebar-nav button {
+    border-color: transparent;
+    color: rgba(255, 255, 255, 0.68);
+  }
+
+  .app-shell.has-data .sidebar-nav button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+  }
+
+  .app-shell.has-data .sidebar-nav button.active {
+    border-color: rgba(8, 181, 207, 0.24);
+    background: rgba(8, 181, 207, 0.14);
+    color: #79e2ef;
+    box-shadow: inset 0 0 0 1px rgba(8, 181, 207, 0.06);
+  }
+
+  .sidebar.mobile-nav-open .mobile-menu-toggle {
+    border-color: rgba(8, 181, 207, 0.42);
+    background: rgba(8, 181, 207, 0.15);
+    color: #79e2ef;
   }
 
   .sidebar-nav button span {
@@ -99,12 +223,10 @@
   }
 
   .sidebar-bottom-user {
-    grid-column: 1 / -1;
-    grid-row: 4;
     display: none;
-    margin: 0;
-    padding: 10px 0 2px;
-    border-top: 1px solid #dbeafe;
+    margin: 14px 0 0;
+    padding: 0 2px;
+    border-top: 0;
   }
 
   .sidebar.mobile-nav-open .sidebar-bottom-user {
@@ -124,17 +246,94 @@
   }
 
   .sidebar.mobile-nav-open .sidebar-dataset-card {
-    grid-column: 1 / -1;
-    grid-row: 3;
     display: grid;
-    padding: 10px 0;
-    border-top: 1px solid #dbeafe;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.045);
+  }
+
+  .sidebar-mobile-panel > .sidebar-divider {
+    display: none;
+  }
+
+  .sidebar-mobile-panel .dataset-summary-card {
+    padding: 0;
+  }
+
+  .sidebar-mobile-panel .dataset-summary-card.menu-open {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-mobile-panel .dataset-menu-shell.menu-open {
+    display: contents;
+  }
+
+  .sidebar-mobile-panel .dataset-menu-shell.menu-open .dataset-inline-action {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .sidebar-mobile-panel .dataset-menu-shell.menu-open .dataset-action-menu {
+    position: static;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    margin: 4px 0 2px;
+    padding: 5px;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background: rgba(5, 14, 25, 0.34);
+    box-shadow: none;
+  }
+
+  .sidebar-mobile-panel .dataset-action-menu .dataset-action-item {
+    min-height: 42px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 12px;
+  }
+
+  .sidebar-mobile-panel .dataset-action-menu .dataset-action-item:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+  }
+
+  .sidebar-mobile-panel .dataset-action-menu .dataset-action-item.danger {
+    color: #fca5a5;
+  }
+
+  .sidebar-mobile-panel .sidebar-dataset-card:has(.dataset-summary-card.menu-open) + .sidebar-bottom-user {
+    margin-top: 16px;
+  }
+
+  .sidebar-mobile-panel .sidebar-user-card {
+    padding-left: 2px;
   }
 
   .main-shell {
     width: 100%;
     min-width: 0;
     padding: 16px 12px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .app-shell.has-data .main-shell {
+    padding: 18px 14px max(22px, env(safe-area-inset-bottom));
+  }
+
+  .app-shell.has-data .data-pulse-view {
+    height: auto;
+  }
+
+  .app-shell.has-data .profile-overview-grid {
+    grid-template-columns: 1fr;
   }
 
   .primary-column,
@@ -550,5 +749,458 @@
 @media (max-width: 560px) and (min-height: 760px) {
   .auth-card {
     margin: 0;
+  }
+}
+
+/* Mobile workspace pass: page-specific layouts for the three primary tools. */
+@media (max-width: 760px) {
+  .app-shell.has-data .main-shell {
+    padding: 14px 12px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .app-shell.has-data .section-title h2 {
+    font-size: 23px;
+  }
+
+  .app-shell.has-data .section-divider {
+    margin: 0;
+  }
+
+  /* Data Pulse */
+  .app-shell.has-data .data-pulse-sticky-header {
+    gap: 12px;
+  }
+
+  .app-shell.has-data .data-pulse-sticky-header .section-title {
+    min-height: 42px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .app-shell.has-data .data-pulse-sticky-header .profile-export-btn {
+    min-width: 44px;
+    height: 44px;
+    padding-inline: 12px;
+  }
+
+  .app-shell.has-data .data-pulse-scroll-content {
+    gap: 12px;
+    padding: 14px 0 0;
+  }
+
+  .app-shell.has-data .profile-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .app-shell.has-data .metric-card {
+    min-height: 82px;
+    padding: 12px;
+    gap: 9px;
+  }
+
+  .app-shell.has-data .metric-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+  }
+
+  .app-shell.has-data .metric-card strong {
+    font-size: 19px;
+  }
+
+  .app-shell.has-data .profile-overview-grid,
+  .app-shell.has-data .profile-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .app-shell.has-data .profile-panel,
+  .app-shell.has-data .profile-section-card {
+    padding: 16px;
+    border-radius: 13px;
+  }
+
+  .app-shell.has-data .profile-panel-head,
+  .app-shell.has-data .profile-section-heading {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .app-shell.has-data .profile-kpi-list,
+  .app-shell.has-data .profile-mini-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .app-shell.has-data .profile-kpi-list div,
+  .app-shell.has-data .profile-mini-card {
+    min-width: 0;
+    padding: 10px 8px;
+  }
+
+  .app-shell.has-data .profile-kpi-list span,
+  .app-shell.has-data .profile-mini-card span {
+    font-size: 9px;
+    overflow-wrap: anywhere;
+  }
+
+  .app-shell.has-data .profile-kpi-list strong,
+  .app-shell.has-data .profile-mini-card strong {
+    font-size: 16px;
+  }
+
+  .app-shell.has-data .profile-kpi-list small {
+    font-size: 10px;
+    overflow-wrap: anywhere;
+  }
+
+  .app-shell.has-data .column-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* Explorer */
+  .app-shell.has-data .chat-view {
+    height: calc(100dvh - 92px);
+    min-height: 500px;
+    gap: 10px;
+  }
+
+  .app-shell.has-data .chat-view .section-title.tab-header {
+    min-height: 42px;
+  }
+
+  .app-shell.has-data .chat-body {
+    min-height: 0;
+    border-color: #dce5e8;
+    border-radius: 13px;
+    overflow: hidden;
+  }
+
+  .app-shell.has-data .session-list-collapsed {
+    height: 48px;
+    flex-basis: 48px;
+    padding: 6px 8px;
+    border-color: #e3eaed;
+  }
+
+  .app-shell.has-data .messages {
+    min-height: 0;
+    padding: 12px 10px;
+  }
+
+  .app-shell.has-data .message.user {
+    max-width: 88%;
+  }
+
+  .app-shell.has-data .chat-input {
+    position: relative;
+    padding: 9px;
+    padding-bottom: max(9px, env(safe-area-inset-bottom));
+    border-top: 1px solid #e3eaed;
+    background: #ffffff;
+  }
+
+  .app-shell.has-data .chat-input textarea {
+    max-height: 120px;
+    border-radius: 11px;
+  }
+
+  .app-shell.has-data .chat-attachment-chip {
+    max-width: 210px;
+  }
+
+  /* Executive Report */
+  .app-shell.has-data .report-workspace-page {
+    width: 100%;
+    min-height: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .app-shell.has-data .report-workspace-page > .section-title {
+    width: 100%;
+    min-height: 34px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .app-shell.has-data .report-workspace-page > .section-divider {
+    display: block;
+  }
+
+  .app-shell.has-data .report-workspace-layout {
+    width: 100%;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    justify-items: stretch;
+    gap: 16px;
+    padding-top: 4px;
+  }
+
+  .app-shell.has-data .report-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid #dce5e8;
+    border-radius: 12px;
+    background: #e8eef0;
+  }
+
+  .app-shell.has-data .report-mobile-tabs button {
+    min-width: 0;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #687987;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .app-shell.has-data .report-mobile-tabs button.active {
+    background: #ffffff;
+    color: #087f91;
+    box-shadow: 0 2px 8px rgba(23, 32, 51, 0.08);
+  }
+
+  .app-shell.has-data .report-mobile-tabs button > span {
+    min-width: 19px;
+    height: 19px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 6px;
+    background: rgba(8, 181, 207, 0.1);
+    color: #087f91;
+    font-size: 10px;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-create .report-library-panel,
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library .report-compose-panel {
+    display: none;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-create .report-compose-panel,
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library .report-library-panel {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    align-self: start;
+    justify-self: stretch;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library {
+    display: block;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library .report-library-panel {
+    height: auto;
+    min-height: 0;
+    display: block;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library .report-library-head {
+    min-height: 0;
+    margin: 0;
+  }
+
+  .app-shell.has-data .report-workspace-layout.mobile-pane-library .report-library-list {
+    min-height: 0;
+    flex: none;
+  }
+
+  .app-shell.has-data .report-compose-panel {
+    width: 100%;
+    border-radius: 13px;
+    overflow: visible;
+  }
+
+  .app-shell.has-data .report-compose-head {
+    padding: 13px;
+  }
+
+  .app-shell.has-data .report-compose-panel .report-generate-form {
+    gap: 14px;
+    padding: 13px;
+  }
+
+  .app-shell.has-data .report-compose-panel .report-field input,
+  .app-shell.has-data .report-compose-panel .report-template-select,
+  .app-shell.has-data .report-compose-panel .report-outline-add input {
+    min-height: 36px;
+    padding: 6px 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .app-shell.has-data .report-compose-panel .report-field textarea {
+    min-height: 68px;
+    padding: 7px 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .report-type-editor .report-field input,
+  .report-type-editor .report-field select {
+    min-height: 36px;
+    padding: 6px 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .report-type-editor .report-field textarea {
+    min-height: 64px;
+    padding: 7px 9px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .app-shell.has-data .report-compose-panel .report-field > span,
+  .report-type-editor .report-field > span {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .app-shell.has-data .report-generate-submit {
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .app-shell.has-data .report-library-head {
+    gap: 10px;
+  }
+
+  .app-shell.has-data .report-filter {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .app-shell.has-data .report-filter button {
+    min-height: 38px;
+    flex: 1 0 auto;
+  }
+
+  .app-shell.has-data .report-library-list {
+    border-radius: 13px;
+  }
+
+  .app-shell.has-data .report-library-row {
+    grid-template-columns: 32px minmax(0, 1fr) 24px;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+
+  .app-shell.has-data .report-library-row-actions {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+  }
+
+  .app-shell.has-data .report-library-row-actions .report-icon-btn {
+    display: none;
+  }
+
+  .app-shell.has-data .report-library-row-actions .report-row-chevron {
+    display: block;
+    margin: 0;
+  }
+
+  .app-shell.has-data .report-library-row h4,
+  .app-shell.has-data .report-library-row-body > p {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .report-type-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  .report-type-editor-head,
+  .report-type-editor-foot {
+    flex: 0 0 auto;
+  }
+
+  .report-type-editor-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .report-type-editor-foot {
+    padding-bottom: max(13px, env(safe-area-inset-bottom));
+    background: #ffffff;
+  }
+
+  .report-type-editor-foot > div > button {
+    min-height: 44px;
+  }
+
+  .report-reader-actions .report-text-btn,
+  .report-reader-actions .report-icon-btn {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    display: inline-grid;
+    place-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    line-height: 0;
+  }
+
+  .report-reader-actions {
+    align-self: stretch;
+    align-items: center;
+  }
+
+  .report-reader-actions .report-text-btn svg,
+  .report-reader-actions .report-icon-btn svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@media (max-width: 380px) {
+  .app-shell.has-data .profile-kpi-list,
+  .app-shell.has-data .profile-mini-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.has-data .data-pulse-sticky-header .profile-export-btn {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+    font-size: 0;
   }
 }

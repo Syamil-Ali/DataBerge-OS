@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { askQuestion, ChatSession, createChatSession, deleteChatMessage, getArtifact, getChatProfileContext, getChatSession } from '../services/api';
 import { Artifact, ChatAttachment, ChatResponse, Dataset, Project, ReportDraft } from '../types/domain';
 import { ChartBlock } from './ChartBlock';
+import { InfoTooltip } from './InfoTooltip';
 import { ChatReportCard } from './ChatReportCard';
 import { ChatSessionList } from './ChatSessionList';
 import { ReportDraftCard } from './ReportDraftCard';
@@ -378,8 +379,10 @@ export function ChatExplorer({ project, dataset, onArtifactCreated, onReportSave
     <section className="chat-view">
       <div className="section-title tab-header">
         <div>
-          <h2>Explorer</h2>
-          <p className="section-subcopy">Ask the data</p>
+          <div className="section-title-row">
+            <h2>Explorer</h2>
+            <InfoTooltip text="Ask questions in everyday language and explore answers grounded in your prepared dataset." />
+          </div>
         </div>
         <div className="header-actions">
           <button
