@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 type AuthMode = 'login' | 'register';
@@ -63,18 +63,24 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
   return (
     <div className="auth-page">
       {onBackHome && (
-        <button className="auth-back" type="button" onClick={onBackHome}>
-          <ArrowLeft size={14} />
-          Back to landing
+        <button className="auth-back" type="button" onClick={onBackHome} aria-label="Return to Data-Berge homepage">
+          <img src="/favicon.svg" alt="" />
+          <span>Data-Berge</span>
         </button>
       )}
-      <div className="auth-card">
-        <div className="auth-brand">
-          <div className="auth-brand-mark">
-            <img src="/favicon.svg" alt="" />
-          </div>
-          <h1>Data Berge</h1>
-          <p>AI-powered data analysis platform</p>
+      <aside className="auth-visual" aria-hidden="true">
+        <img src="/data-berge-hero-wide.webp" alt="" />
+        <div className="auth-visual-shade" />
+        <div className="auth-visual-copy">
+          <span>Data-Berge</span>
+          <h2>The deeper story starts with your data.</h2>
+          <p>Prepare messy workbooks, uncover relationships, and move from raw files to useful answers.</p>
+        </div>
+      </aside>
+      <div className={`auth-card ${mode === 'register' ? 'auth-card-register' : ''}`}>
+        <div className="auth-intro">
+          <h1>{mode === 'login' ? 'Welcome back.' : 'Create your workspace.'}</h1>
+          <p>{mode === 'login' ? 'Sign in to continue exploring your data.' : 'Start turning your files into clear, useful answers.'}</p>
         </div>
 
         <div className="auth-tabs">
@@ -168,9 +174,6 @@ export function LoginPage({ initialMode = 'login', onModeChange, onBackHome }: L
           </button>
         </form>
 
-        <div className="auth-footer">
-          <span>100 MB storage per user · AI-powered analysis · No credit card required</span>
-        </div>
       </div>
     </div>
   );

@@ -362,18 +362,34 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     min-height: 100dvh;
     overflow-y: auto;
     padding: max(14px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
+    background: #f8fafc;
+  }
+
+  .auth-visual {
+    display: none;
   }
 
   .auth-back {
-    position: static;
-    align-self: flex-start;
+    position: absolute;
+    top: max(18px, env(safe-area-inset-top));
+    left: 14px;
     min-height: 40px;
-    margin: 0 0 16px;
+    margin: 0;
     padding: 0 13px;
+    border: 0;
+    background: transparent;
+    color: #172033;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .auth-back img {
+    width: 32px;
+    height: 32px;
   }
 
   .auth-card {
@@ -383,10 +399,29 @@
     gap: 18px;
     padding: 24px 20px 22px;
     border-radius: 16px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .auth-card-register {
+    gap: 14px;
+    padding-top: 12px;
+    padding-bottom: 16px;
+  }
+
+  .auth-card-register .auth-form {
+    gap: 10px;
+  }
+
+  .auth-card-register .auth-form input {
+    min-height: 43px;
   }
 
   .auth-brand {
     gap: 6px;
+    flex-direction: row;
+    justify-content: flex-start;
   }
 
   .auth-brand-mark,
@@ -395,12 +430,12 @@
     height: 42px;
   }
 
-  .auth-brand h1 {
-    font-size: 21px;
+  .auth-brand > span {
+    font-size: 16px;
   }
 
-  .auth-brand p {
-    font-size: 12px;
+  .auth-intro h1 {
+    font-size: 30px;
   }
 
   .auth-tabs {
@@ -443,5 +478,77 @@
     max-width: 270px;
     align-self: center;
     line-height: 1.5;
+  }
+}
+
+/* Short phones such as iPhone SE need denser vertical rhythm. */
+@media (max-width: 560px) and (max-height: 720px) {
+  .auth-page {
+    padding-top: max(8px, env(safe-area-inset-top));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .auth-back {
+    min-height: 34px;
+    top: max(18px, env(safe-area-inset-top));
+    margin: 0;
+    padding-inline: 10px;
+  }
+
+  .auth-card,
+  .auth-card-register {
+    gap: 9px;
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+
+  .auth-intro h1,
+  .auth-card-register .auth-intro h1 {
+    margin-bottom: 4px;
+    font-size: 27px;
+  }
+
+  .auth-intro p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .auth-tabs,
+  .auth-tab {
+    min-height: 38px;
+  }
+
+  .auth-card-register .auth-form {
+    gap: 7px;
+  }
+
+  .auth-form label {
+    gap: 3px;
+  }
+
+  .auth-form label span {
+    font-size: 12px;
+  }
+
+  .auth-card-register .auth-form input,
+  .auth-form input {
+    min-height: 40px;
+    padding-block: 7px;
+  }
+
+  .auth-password-toggle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-submit {
+    min-height: 42px;
+  }
+}
+
+/* On taller phones, distribute the spare space instead of leaving it all below. */
+@media (max-width: 560px) and (min-height: 760px) {
+  .auth-card {
+    margin: 0;
   }
 }
