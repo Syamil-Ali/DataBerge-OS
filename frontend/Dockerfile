@@ -3,8 +3,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . ./
-ARG VITE_API_BASE_URL=/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Production traffic stays same-origin and is forwarded by the Nginx /api proxy.
+# This keeps HttpOnly session cookies first-party and avoids cross-site auth failures.
+ENV VITE_API_BASE_URL=/api
 RUN npm run build
 
 FROM nginx:1.27.5-alpine

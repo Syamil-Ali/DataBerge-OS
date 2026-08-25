@@ -1,6 +1,10 @@
 import { Artifact, ChatAttachment, ChatResponse, CustomReportType, Dataset, ModelTransformation, Overview, Project, RelationalSchema, RelationalRelationship, ReportSectionKind, ReportSectionPresentation, ReportTypeSection } from '../types/domain';
 
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL?.trim() || '/api').replace(/\/+$/, '');
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+
+// The production container owns an /api reverse proxy. Keeping browser requests
+// same-origin ensures its HttpOnly auth cookie is sent reliably on every request.
+export const API_BASE = (import.meta.env.PROD ? '/api' : configuredApiBase || '/api').replace(/\/+$/, '');
 
 let inMemoryCsrfToken: string | undefined;
 
