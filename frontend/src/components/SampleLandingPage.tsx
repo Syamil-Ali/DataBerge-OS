@@ -36,23 +36,28 @@ type SampleLandingPageProps = {
   onSignUp: () => void;
 };
 
+const landingNavigation = [
+  { label: 'Product', target: 'product' },
+  { label: 'Sources', target: 'sources' },
+  { label: 'Results', target: 'results' },
+] as const;
+
 export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: SampleLandingPageProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navFilled, setNavFilled] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setNavFilled(entry.intersectionRatio < 0.92),
-      { threshold: [0.92] },
-    );
-
-    observer.observe(hero);
-    return () => observer.disconnect();
+    const updateNavbar = () => setNavFilled(window.scrollY > 24);
+    updateNavbar();
+    window.addEventListener('scroll', updateNavbar, { passive: true });
+    return () => window.removeEventListener('scroll', updateNavbar);
   }, []);
+
+  const scrollToSection = (target: string) => {
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMobileOpen(false);
+  };
 
   return (
     <div
@@ -63,7 +68,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-[background-color,backdrop-filter,border-color,box-shadow] duration-700 ease-out ${navFilled ? "bg-[#172033]/92 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-[#08111d]/10" : "bg-transparent border-b border-transparent shadow-none"}`}>
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2.5 group">
+          <a href="#top" className="flex items-center gap-2.5 group" onClick={() => setMobileOpen(false)}>
             <div className="w-8 h-8 rounded-lg overflow-hidden shadow-lg shadow-[#08B5CF]/30 group-hover:shadow-[#08B5CF]/50 transition-shadow">
               <img src="/favicon.svg" alt="" className="w-full h-full" />
             </div>
@@ -72,13 +77,14 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
-            {["Product", "Sources", "Results"].map(item => (
+            {landingNavigation.map(({ label, target }) => (
               <a
-                key={item}
-                href="#"
+                key={target}
+                href={`#${target}`}
+                onClick={(event) => { event.preventDefault(); scrollToSection(target); }}
                 className="text-[13.5px] text-white/60 hover:text-white transition-colors duration-200"
               >
-                {item}
+                {label}
               </a>
             ))}
           </div>
@@ -102,9 +108,9 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden bg-[#172033]/98 border-t border-white/10 px-6 py-4 flex flex-col gap-4">
-            {["Product", "Sources", "Results"].map(item => (
-              <a key={item} href="#" className="text-white/70 hover:text-white transition-colors">
-                {item}
+            {landingNavigation.map(({ label, target }) => (
+              <a key={target} href={`#${target}`} onClick={(event) => { event.preventDefault(); scrollToSection(target); }} className="text-white/70 hover:text-white transition-colors">
+                {label}
               </a>
             ))}
             <div className="flex gap-3 pt-2">
@@ -118,7 +124,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       </nav>
 
       {/* ── HERO ── */}
-      <section ref={heroRef} className="relative min-h-[100dvh] bg-[#172033] overflow-hidden pt-16">
+      <section id="top" ref={heroRef} className="relative min-h-[100dvh] bg-[#172033] overflow-hidden pt-16">
         <img
           src="/data-berge-hero-wide.webp"
           alt="Iceberg above and below the waterline"
@@ -163,7 +169,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
                 Dive Deeper
                 <ArrowRight size={17} className="group-hover:translate-x-0.5 transition-transform" />
               </button>
-              <button className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-white/70 hover:border-white/30 hover:text-white text-[15px] transition-all duration-200">
+              <button type="button" onClick={() => scrollToSection('product')} className="flex items-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-white/70 hover:border-white/30 hover:text-white text-[15px] transition-all duration-200">
                 How It Works
                 <ChevronDown size={17} />
               </button>
@@ -195,7 +201,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       </section>
 
       {/* ── WORKFLOW FEATURES ── */}
-      <section className="py-24 lg:py-32 bg-[#F8FAFC]">
+      <section id="product" className="scroll-mt-16 py-24 lg:py-32 bg-[#F8FAFC]">
         <Reveal className="max-w-7xl mx-auto px-6">
           <div className="mb-14 max-w-2xl">
             <span className="text-[#08B5CF] text-[10.5px] font-semibold uppercase tracking-[0.16em] mb-3 block">
@@ -309,7 +315,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       </section>
 
       {/* ── DATA SOURCES ── */}
-      <section className="py-24 lg:py-32 bg-[#F8FAFC]">
+      <section id="sources" className="scroll-mt-16 py-24 lg:py-32 bg-[#F8FAFC]">
         <Reveal className="max-w-7xl mx-auto px-6">
           <span className="text-[#08B5CF] text-[10.5px] font-semibold uppercase tracking-[0.16em] mb-4 block">
             Bring Data In
@@ -385,7 +391,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
       </section>
 
       {/* ── MODEL-FIRST FLOW ── */}
-      <section className="relative py-24 lg:py-32 bg-[#0F1E30] overflow-hidden">
+      <section id="results" className="scroll-mt-16 relative py-24 lg:py-32 bg-[#0F1E30] overflow-hidden">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -537,7 +543,7 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
             <button onClick={onGetStarted} className="px-7 py-3.5 rounded-xl bg-[#08B5CF] hover:bg-[#08A9C2] text-white font-semibold text-[15px] transition-all duration-200 shadow-lg shadow-[#08B5CF]/25 hover:shadow-[#08B5CF]/40 hover:-translate-y-0.5">
               Get Started Now
             </button>
-            <button className="px-7 py-3.5 rounded-xl border border-white/15 text-white/70 hover:border-white/30 hover:text-white text-[15px] transition-all duration-200">
+            <button type="button" onClick={() => scrollToSection('product')} className="px-7 py-3.5 rounded-xl border border-white/15 text-white/70 hover:border-white/30 hover:text-white text-[15px] transition-all duration-200">
               Learn More
             </button>
           </div>
@@ -561,17 +567,18 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
             </div>
 
             {[
-              { heading: "Solutions", links: ["Workbook profiling", "Relationship modeling", "Executive reports"] },
-              { heading: "Product", links: ["Data Pulse", "Explorer", "Data Model"] },
-              { heading: "Sources", links: ["Excel", "CSV", "OpenDOSM"] },
-            ].map(({ heading, links }) => (
+              { heading: "Solutions", target: "product", links: ["Workbook profiling", "Relationship modeling", "Executive reports"] },
+              { heading: "Product", target: "results", links: ["Data Pulse", "Explorer", "Data Model"] },
+              { heading: "Sources", target: "sources", links: ["Excel", "CSV", "OpenDOSM"] },
+            ].map(({ heading, target, links }) => (
               <div key={heading}>
                 <div className="font-semibold text-white text-sm mb-4 tracking-wide">{heading}</div>
                 <div className="flex flex-col gap-3">
                   {links.map(link => (
                     <a
                       key={link}
-                      href="#"
+                      href={`#${target}`}
+                      onClick={(event) => { event.preventDefault(); scrollToSection(target); }}
                       className="text-white/35 hover:text-white/70 transition-colors text-sm"
                     >
                       {link}

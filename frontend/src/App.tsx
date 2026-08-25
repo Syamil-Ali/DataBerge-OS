@@ -110,6 +110,7 @@ function AuthenticatedApp({
   } | null>(null);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileHeaderFilled, setMobileHeaderFilled] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [reviewReturnStep, setReviewReturnStep] = useState<LandingStep>('setup');
@@ -150,6 +151,13 @@ function AuthenticatedApp({
     document.addEventListener('pointerdown', closeMobileMenu);
     return () => document.removeEventListener('pointerdown', closeMobileMenu);
   }, [mobileNavOpen]);
+
+  useEffect(() => {
+    const updateMobileHeader = () => setMobileHeaderFilled(window.scrollY > 12);
+    updateMobileHeader();
+    window.addEventListener('scroll', updateMobileHeader, { passive: true });
+    return () => window.removeEventListener('scroll', updateMobileHeader);
+  }, []);
 
   const load = async (
     preferredDatasetId: string | null | undefined = undefined,
@@ -508,7 +516,7 @@ function AuthenticatedApp({
         </div>
       )}
       <div className={`app-layout ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
-        <aside ref={sidebarRef} className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
+        <aside ref={sidebarRef} className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileNavOpen ? 'mobile-nav-open' : ''} ${mobileHeaderFilled ? 'mobile-header-filled' : ''}`}>
           <div className="sidebar-brand">
             <div className="brand-mark" aria-hidden="true">
               <img src="/favicon.svg" alt="" />
