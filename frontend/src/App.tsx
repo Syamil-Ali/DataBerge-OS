@@ -110,7 +110,6 @@ function AuthenticatedApp({
   } | null>(null);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [mobileHeaderFilled, setMobileHeaderFilled] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [reviewReturnStep, setReviewReturnStep] = useState<LandingStep>('setup');
@@ -151,13 +150,6 @@ function AuthenticatedApp({
     document.addEventListener('pointerdown', closeMobileMenu);
     return () => document.removeEventListener('pointerdown', closeMobileMenu);
   }, [mobileNavOpen]);
-
-  useEffect(() => {
-    const updateMobileHeader = () => setMobileHeaderFilled(window.scrollY > 12);
-    updateMobileHeader();
-    window.addEventListener('scroll', updateMobileHeader, { passive: true });
-    return () => window.removeEventListener('scroll', updateMobileHeader);
-  }, []);
 
   const load = async (
     preferredDatasetId: string | null | undefined = undefined,
@@ -364,6 +356,11 @@ function AuthenticatedApp({
   };
 
   const hasRelationalSchemas = relationalSchemas.length > 0;
+  const closeWorkspaceMenus = () => {
+    setDatasetMenuOpen(false);
+    setMobileNavOpen(false);
+  };
+
   const openDataModel = () => {
     if (activeSchema && overview?.datasets.some((dataset) => dataset.id === activeSchema.id)) {
       setSelectedDatasetId(activeSchema.id);
@@ -372,7 +369,7 @@ function AuthenticatedApp({
     }
     setActiveWorkspaceKind('schema');
     setActiveTab('datamodel');
-    setDatasetMenuOpen(false);
+    closeWorkspaceMenus();
   };
 
   useEffect(() => {
@@ -516,7 +513,7 @@ function AuthenticatedApp({
         </div>
       )}
       <div className={`app-layout ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
-        <aside ref={sidebarRef} className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileNavOpen ? 'mobile-nav-open' : ''} ${mobileHeaderFilled ? 'mobile-header-filled' : ''}`}>
+        <aside ref={sidebarRef} className={`sidebar ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
           <div className="sidebar-brand">
             <div className="brand-mark" aria-hidden="true">
               <img src="/favicon.svg" alt="" />
@@ -614,14 +611,14 @@ function AuthenticatedApp({
                         <span>Data Model</span>
                       </button>
                     )}
-                    <button className="dataset-action-item" onClick={() => { setDatasetMenuOpen(false); load(); if (project) loadRelationalSchemas(project.id); }}>
+                    <button className="dataset-action-item" onClick={() => { closeWorkspaceMenus(); load(); if (project) loadRelationalSchemas(project.id); }}>
                       <RefreshCw size={14} />
                       <span>Refresh</span>
                     </button>
                     {showingSchemaSummary && activeSchema ? (
                       <button
                         className="dataset-action-item danger"
-                        onClick={() => { setDatasetMenuOpen(false); handleDeleteSchema(); }}
+                        onClick={() => { closeWorkspaceMenus(); handleDeleteSchema(); }}
                         disabled={busy}
                       >
                         <Trash2 size={14} />
@@ -630,7 +627,7 @@ function AuthenticatedApp({
                     ) : selectedDataset && (
                       <button
                         className="dataset-action-item danger"
-                        onClick={() => { setDatasetMenuOpen(false); handleDeleteDataset(); }}
+                        onClick={() => { closeWorkspaceMenus(); handleDeleteDataset(); }}
                         disabled={busy}
                       >
                         <Trash2 size={14} />

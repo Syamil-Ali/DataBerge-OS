@@ -1,6 +1,7 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowRight,
   FileSpreadsheet,
   Link2,
   Table2,
@@ -10,6 +11,33 @@ import { OpenDOSMPanel } from './OpenDOSMPanel';
 import SampleLandingPage from './SampleLandingPage';
 
 export type LandingStep = 'landing' | 'setup' | 'file-upload' | 'dosm-connect';
+
+function SetupHeader({ onHome, onBack, backLabel }: { onHome: () => void; onBack: () => void; backLabel: string }) {
+  return (
+    <header className="landing-nav setup-nav">
+      <button className="setup-brand" type="button" onClick={onHome} aria-label="Return to Data-Berge homepage">
+        <img src="/favicon.svg" alt="" />
+        <strong>Data-Berge</strong>
+      </button>
+      <button className="landing-nav-back" type="button" onClick={onBack}>
+        <ArrowLeft size={15} />
+        {backLabel}
+      </button>
+    </header>
+  );
+}
+
+function SetupJourney() {
+  return (
+    <div className="setup-journey" aria-label="Data setup progress">
+      <span className="active"><b>1</b>Add data</span>
+      <ArrowRight size={13} aria-hidden="true" />
+      <span><b>2</b>Review model</span>
+      <ArrowRight size={13} aria-hidden="true" />
+      <span><b>3</b>Workspace</span>
+    </div>
+  );
+}
 
 type LandingPageProps = {
   busy: boolean;
@@ -101,17 +129,14 @@ export function LandingPage({
   if (step === 'setup') {
     return (
       <div className="landing-shell setup">
-        <header className="landing-nav setup-nav">
-          <button className="landing-nav-back" onClick={goHome}>
-            <ArrowLeft size={15} />
-            Back to Home
-          </button>
-        </header>
+        <SetupHeader onHome={goHome} onBack={goHome} backLabel="Back to landing" />
 
         <main className="data-setup-page">
           <section className="data-setup-head">
+            <span className="setup-eyebrow">Data setup</span>
             <h1>Connect your data</h1>
             <p>Choose how you want to bring data into Data-Berge before profiling, modeling, and analysis starts.</p>
+            <SetupJourney />
           </section>
 
           <section className="data-source-grid">
@@ -153,17 +178,14 @@ export function LandingPage({
   if (step === 'file-upload') {
     return (
       <div className="landing-shell setup">
-        <header className="landing-nav setup-nav">
-          <button className="landing-nav-back" onClick={() => setStep('setup')}>
-            <ArrowLeft size={15} />
-            Choose another source
-          </button>
-        </header>
+        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
 
         <main className="file-upload-page">
           <section className="data-setup-head">
+            <span className="setup-eyebrow">File connector</span>
             <h1>Upload your dataset</h1>
             <p>Drop in a CSV or Excel workbook. Data-Berge will profile the file and open the data model review before the workspace.</p>
+            <SetupJourney />
           </section>
 
           <section className="file-upload-stage">
@@ -176,6 +198,15 @@ export function LandingPage({
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
               onClick={() => !busy && inputRef.current?.click()}
+              onKeyDown={(event) => {
+                if (!busy && (event.key === 'Enter' || event.key === ' ')) {
+                  event.preventDefault();
+                  inputRef.current?.click();
+                }
+              }}
+              role="button"
+              tabIndex={busy ? -1 : 0}
+              aria-disabled={busy}
             >
               <input ref={inputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleChange} disabled={busy} />
               <div className="setup-dropzone-icon">
@@ -200,17 +231,14 @@ export function LandingPage({
   if (step === 'dosm-connect') {
     return (
       <div className="landing-shell setup">
-        <header className="landing-nav setup-nav">
-          <button className="landing-nav-back" onClick={() => setStep('setup')}>
-            <ArrowLeft size={15} />
-            Choose another source
-          </button>
-        </header>
+        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
 
         <main className="dosm-connect-page">
           <section className="data-setup-head">
+            <span className="setup-eyebrow">Open data connector</span>
             <h1>Connect DOSM data</h1>
             <p>Pick a public Malaysian dataset from OpenDOSM. Data-Berge will download it, profile it, and open the workspace.</p>
+            <SetupJourney />
           </section>
 
           <section className="dosm-connect-stage">

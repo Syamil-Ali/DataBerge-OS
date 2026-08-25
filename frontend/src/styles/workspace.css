@@ -407,10 +407,32 @@ body,
   transition: opacity 150ms ease, transform 150ms ease;
 }
 
-.info-tooltip:hover .info-tooltip-content,
-.info-tooltip:focus-within .info-tooltip-content {
+.info-tooltip.is-open .info-tooltip-content {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .info-tooltip:hover .info-tooltip-content {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 760px) {
+  .info-tooltip-content {
+    position: fixed;
+    top: calc(72px + env(safe-area-inset-top));
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-width: none;
+    transform: translateY(-4px);
+  }
+
+  .info-tooltip.is-open .info-tooltip-content {
+    transform: translateY(0);
+  }
 }
 
 .app-shell.has-data .section-divider {

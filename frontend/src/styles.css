@@ -104,15 +104,9 @@ textarea::placeholder {
     padding: max(8px, env(safe-area-inset-top)) 12px 8px;
     border-radius: 0;
     border-bottom: 0;
-    background: transparent;
-    box-shadow: none;
-    transition: background-color 420ms ease, box-shadow 420ms ease;
-  }
-
-  .app-shell.has-data .sidebar.mobile-header-filled,
-  .app-shell.has-data .sidebar.mobile-nav-open {
     background: rgba(16, 29, 45, 0.97);
     box-shadow: 0 2px 10px rgba(10, 22, 36, 0.14);
+    transition: background-color 420ms ease, box-shadow 420ms ease;
   }
 
   .app-shell.has-data .sidebar::after {
@@ -124,14 +118,9 @@ textarea::placeholder {
     left: 0;
     height: 14px;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 48' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1440V18Q1260 42 1080 22T720 22T360 22T0 18Z' fill='%23101d2d'/%3E%3C/svg%3E") center top / 100% 100% no-repeat;
-    opacity: 0;
+    opacity: 1;
     transition: opacity 420ms ease;
     pointer-events: none;
-  }
-
-  .app-shell.has-data .sidebar.mobile-header-filled::after,
-  .app-shell.has-data .sidebar.mobile-nav-open::after {
-    opacity: 1;
   }
 
   .app-shell.has-data .sidebar-brand,
@@ -150,28 +139,16 @@ textarea::placeholder {
   }
 
   .app-shell.has-data .sidebar-brand .brand-copy strong {
-    color: #172033;
+    color: #ffffff;
     transition: color 420ms ease;
   }
 
   .app-shell.has-data .mobile-menu-toggle {
     align-self: center;
-    border-color: #cbd5e1;
-    background: rgba(255, 255, 255, 0.72);
-    color: #172033;
-    transition: color 420ms ease, border-color 420ms ease, background-color 420ms ease;
-  }
-
-  .app-shell.has-data .sidebar.mobile-header-filled .sidebar-brand .brand-copy strong,
-  .app-shell.has-data .sidebar.mobile-nav-open .sidebar-brand .brand-copy strong {
-    color: #ffffff;
-  }
-
-  .app-shell.has-data .sidebar.mobile-header-filled .mobile-menu-toggle,
-  .app-shell.has-data .sidebar.mobile-nav-open .mobile-menu-toggle {
     border-color: rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.06);
     color: #ffffff;
+    transition: color 420ms ease, border-color 420ms ease, background-color 420ms ease;
   }
 
   #dashboard-mobile-menu {
