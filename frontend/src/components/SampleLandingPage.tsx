@@ -42,6 +42,65 @@ const landingNavigation = [
   { label: 'Results', target: 'results' },
 ] as const;
 
+const workbookPreviewRows = [
+  { table: 'Sales', rows: '3,000', columns: '8' },
+  { table: 'Customers', rows: '842', columns: '6' },
+  { table: 'Products', rows: '64', columns: '4' },
+] as const;
+
+function WorkbookProfileVisual() {
+  return (
+    <div className="db-workbook-preview" aria-hidden="true">
+      <div className="db-workbook-preview-head">
+        <span className="db-workbook-file"><FileText size={14} /> sales_workbook.xlsx</span>
+        <span className="db-preview-status">3 tables found</span>
+      </div>
+      <div className="db-workbook-table">
+        <div className="db-workbook-row db-workbook-labels">
+          <span>Table</span><span>Rows</span><span>Columns</span>
+        </div>
+        {workbookPreviewRows.map((row) => (
+          <div className="db-workbook-row" key={row.table}>
+            <strong>{row.table}</strong>
+            <span>{row.rows}</span>
+            <span>{row.columns}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RelationshipVisual() {
+  return (
+    <div className="db-relationship-preview" aria-hidden="true">
+      <div className="db-relation-node db-relation-orders">
+        <strong>orders</strong><span>customer_id</span><span>product_id</span>
+      </div>
+      <div className="db-relation-links"><i /><i /></div>
+      <div className="db-relation-targets">
+        <div className="db-relation-node"><strong>customers</strong><span>id · primary key</span></div>
+        <div className="db-relation-node"><strong>products</strong><span>id · primary key</span></div>
+      </div>
+    </div>
+  );
+}
+
+function AnalystContextVisual() {
+  return (
+    <div className="db-context-preview" aria-hidden="true">
+      <div className="db-context-source"><Database size={14} /><span>Profile metadata</span></div>
+      <div className="db-context-line" />
+      <div className="db-context-core"><strong>Context</strong><span>types · descriptions</span></div>
+      <div className="db-context-line db-context-line-out" />
+      <div className="db-context-outputs">
+        <span><Search size={13} />Explorer</span>
+        <span><FileText size={13} />Reports</span>
+      </div>
+    </div>
+  );
+}
+
 export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: SampleLandingPageProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navFilled, setNavFilled] = useState(false);
@@ -222,14 +281,14 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
             <div className="db-reveal-stagger grid md:grid-cols-[1.2fr_0.8fr] gap-5">
               <article className="db-motion-card group relative min-h-[500px] p-8 rounded-2xl border border-[#D8E4E8] bg-gradient-to-b from-white to-[#E8F5F6] overflow-hidden hover:shadow-2xl hover:shadow-[#08B5CF]/10 transition-all duration-300">
                 <div className="absolute inset-x-0 top-0 h-48 bg-[radial-gradient(circle_at_70%_0%,rgba(8,181,207,0.18),transparent_64%)]" />
-                <div className="relative h-full flex flex-col justify-end">
-                  <div className="w-12 h-12 rounded-xl bg-[#08B5CF]/12 flex items-center justify-center mb-8">
-                    <FileText size={21} className="text-[#08B5CF]" />
+                <div className="relative h-full flex flex-col">
+                  <WorkbookProfileVisual />
+                  <div className="mt-auto pt-7">
+                    <h3 className="text-2xl font-semibold text-[#172033] mb-3">Workbook profiling</h3>
+                    <p className="max-w-md text-[#64748B] text-sm leading-relaxed">
+                      Open Excel and CSV files, find every table, and review what was detected before analysis begins.
+                    </p>
                   </div>
-                  <h3 className="text-2xl font-semibold text-[#172033] mb-3">Workbook profiling</h3>
-                  <p className="max-w-md text-[#64748B] text-sm leading-relaxed">
-                    Read Excel and CSV files, detect tables, infer types, and surface full column coverage before analysis begins.
-                  </p>
                 </div>
               </article>
 
@@ -239,18 +298,23 @@ export default function SampleLandingPage({ onGetStarted, onLogin, onSignUp }: S
                     icon: GitBranch,
                     label: "Relationship modeling",
                     desc: "Confirm joins, keys, and table relationships before the workspace starts answering your questions.",
+                    visual: <RelationshipVisual />,
                   },
                   {
                     icon: Database,
                     label: "Analyst context",
                     desc: "Carry profile metadata, descriptions, and model context into Explorer and Executive Reports.",
+                    visual: <AnalystContextVisual />,
                   },
-                ].map(({ icon: Icon, label, desc }) => (
-                  <article key={label} className="db-motion-card group min-h-[240px] p-7 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#08B5CF]/30 hover:shadow-xl hover:shadow-[#08B5CF]/8 transition-all duration-300">
-                    <div className="w-11 h-11 rounded-xl bg-[#08B5CF]/10 flex items-center justify-center mb-8">
-                      <Icon size={19} className="text-[#087F91]" />
+                ].map(({ icon: Icon, label, desc, visual }) => (
+                  <article key={label} className="db-motion-card group min-h-[240px] p-6 rounded-2xl bg-white border border-[#E2E8F0] hover:border-[#08B5CF]/30 hover:shadow-xl hover:shadow-[#08B5CF]/8 transition-all duration-300">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-9 h-9 shrink-0 rounded-[10px] bg-[#08B5CF]/10 flex items-center justify-center">
+                        <Icon size={17} className="text-[#087F91]" />
+                      </div>
+                      <h3 className="font-semibold text-[#172033] text-[17px]">{label}</h3>
                     </div>
-                    <h3 className="font-semibold text-[#172033] text-[17px] mb-2.5">{label}</h3>
+                    {visual}
                     <p className="text-[#64748B] text-sm leading-relaxed">{desc}</p>
                   </article>
                 ))}

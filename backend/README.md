@@ -32,3 +32,16 @@ Code belongs here when it can operate through injected contracts without knowing
 - workers: `python -m scripts.worker`
 
 Production runs migrations as a release step, then starts any number of stateless API replicas and independently scaled workers.
+
+## Supabase federated connector
+
+The Supabase source uses PostgreSQL directly and does not download the selected table. Configure `CONNECTOR_SECRET_KEY` with a stable, high-entropy value before saving connections; changing it makes existing saved credentials unreadable. Query behavior is controlled by:
+
+- `FEDERATED_CONNECT_TIMEOUT_SECONDS` (default `10`)
+- `FEDERATED_QUERY_TIMEOUT_MS` (default `15000`)
+- `FEDERATED_PREVIEW_ROWS` (default `100`)
+- `FEDERATED_MAX_RESULT_ROWS` (default `500`)
+
+Use a dedicated database user with `CONNECT`, schema `USAGE`, and `SELECT` only on the schemas and tables Data-Berge may access. The connector rejects private/local destination addresses, requires TLS, runs read-only transactions, and only permits a single query against the registered logical `dataset` table.
+
+The initial scope is one table or view per federated dataset. Cross-table joins, writes, full materialization, scheduled sync, and per-user Supabase RLS forwarding are intentionally excluded.

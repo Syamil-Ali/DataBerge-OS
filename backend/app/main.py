@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from app.api import artifacts, auth, chat, chat_sessions, datasets, opendosm, projects, relational, reports
+from app.api import artifacts, auth, chat, chat_sessions, connections, datasets, opendosm, projects, relational, reports
 from app.middleware.production import ProductionMiddleware, RequestBodyLimitMiddleware
 from app.services.llm_observability import configure_agno_autolog
 from app.services.report_queue import shutdown_report_queue
@@ -84,3 +84,4 @@ app.include_router(chat_sessions.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(opendosm.router, prefix="/api")
 app.include_router(relational.router, prefix="/api")
+app.include_router(connections.router, prefix="/api")

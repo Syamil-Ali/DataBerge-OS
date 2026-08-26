@@ -259,6 +259,78 @@ export async function getOpenDOSMTaskStatus(taskId: string): Promise<OpenDOSMTas
   return request<OpenDOSMTaskStatus>(`/opendosm/status/${taskId}`);
 }
 
+// Federated database connections
+
+export type DataConnection = {
+  id: string;
+  project_id: string;
+  name: string;
+  provider: 'supabase' | 'postgresql';
+  connector_type: 'postgresql';
+  status: 'untested' | 'connected' | 'failed';
+  config: {
+    host: string;
+    port: number;
+    database: string;
+    username: string;
+    sslmode: string;
+  };
+  last_tested_at?: string | null;
+};
+
+export type RemoteSchema = { name: string };
+export type RemoteTable = {
+  name: string;
+  kind: 'table' | 'view' | 'materialized_view';
+  estimated_rows: number;
+};
+
+export async function createDataConnection(projectId: string, payload: {
+  name: string;
+  provider: 'supabase' | 'postgresql';
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password: string;
+  sslmode: 'require' | 'verify-ca' | 'verify-full';
+}): Promise<DataConnection> {
+  return request<DataConnection>(`/projects/${projectId}/connections`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function testDataConnection(projectId: string, connectionId: string): Promise<{ ok: boolean; database: string; database_user: string }> {
+  return request(`/projects/${projectId}/connections/${connectionId}/test`, { method: 'POST' });
+}
+
+export async function deleteDataConnection(projectId: string, connectionId: string): Promise<void> {
+  await request(`/projects/${projectId}/connections/${connectionId}`, { method: 'DELETE' });
+}
+
+export async function listRemoteSchemas(projectId: string, connectionId: string): Promise<RemoteSchema[]> {
+  return request(`/projects/${projectId}/connections/${connectionId}/schemas`);
+}
+
+export async function listRemoteTables(projectId: string, connectionId: string, schema: string): Promise<RemoteTable[]> {
+  return request(`/projects/${projectId}/connections/${connectionId}/tables?schema=${encodeURIComponent(schema)}`);
+}
+
+export async function createFederatedDataset(projectId: string, payload: {
+  connection_id: string;
+  schema_name: string;
+  table_name: string;
+  name?: string;
+}): Promise<Dataset> {
+  return request<Dataset>(`/projects/${projectId}/federated-datasets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
 // Relational Schemas
 
 export async function uploadRelationalSchema(projectId: string, file: File): Promise<RelationalSchema> {

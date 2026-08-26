@@ -185,6 +185,12 @@ def materialize_path(uri: str | Path) -> Path:
 
 
 def materialize_record_paths(record: dict) -> dict:
+    profile = record.get("profile") or {}
+    profile_source = profile.get("source") if isinstance(profile, dict) else {}
+    if record.get("status") == "federated" or (
+        isinstance(profile_source, dict) and profile_source.get("access_mode") == "federated"
+    ):
+        return record
     for field in ("source_path", "working_path"):
         value = record.get(field)
         if not value:

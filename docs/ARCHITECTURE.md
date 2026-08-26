@@ -2,7 +2,7 @@
 
 ## Product boundary
 
-Data-Berge OS is a governed file-analytics modular monolith. Production runs separate stateless API and durable worker processes backed by PostgreSQL, Redis, and S3-compatible object storage. The frontend serves static assets and proxies /api to the API service.
+Data-Berge OS is a governed analytics modular monolith. Materialized sources such as files and OpenDOSM use object storage and DuckDB-backed working data. Federated PostgreSQL sources such as Supabase retain their data at the source and execute bounded, read-only queries through a provider adapter. Production runs separate stateless API and durable worker processes backed by PostgreSQL, Redis, and S3-compatible object storage. The frontend serves static assets and proxies /api to the API service.
 
 ## Runtime topology
 
@@ -32,6 +32,7 @@ API replicas do authentication, validation, orchestration and fast reads. Worker
 - backend/app/services/job_queue.py and scripts/worker.py own durable RQ execution.
 - backend/app/services/telemetry.py exports Prometheus metrics and optional OTLP traces.
 - backend/app/workflows owns upload, chat and report transactions.
+- backend/app/connectors owns database-specific discovery and federated query adapters; backend/app/services/federated.py owns provider-neutral registration and execution.
 - backend/data_berge_core contains reusable deterministic analytics contracts and skills.
 - frontend feature modules own routing, relationship modeling, reporting and workspace presentation.
 
@@ -46,6 +47,8 @@ Every user-owned metadata query includes ownership criteria. Object keys are nam
 PostgreSQL is authoritative for users, projects, datasets, chat, artifacts, schemas, quota counters and durable job status. Migrations run once as a pre-deploy operation; API and worker processes verify the schema rather than racing to modify it.
 
 S3-compatible storage is authoritative for uploaded and generated tabular files. Node-local cache data is disposable. Redis is durable queue and shared limiter state, configured with a no-eviction policy for the self-hosted topology.
+
+Federated connection metadata and encrypted credentials are stored separately from datasets. A federated dataset records an allowlisted remote schema and table, never a local working file. Profiles use a bounded sample and database row estimate; queries are pushed down to the source under read-only transactions, statement timeouts and result limits.
 
 SQLite and local files remain a development/test adapter only.
 

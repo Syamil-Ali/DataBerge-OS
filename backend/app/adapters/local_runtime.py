@@ -89,6 +89,9 @@ class LocalProfileProvider:
 class LocalQueryRunner:
     """Build and execute read-only queries against local dataset files."""
 
+    def __init__(self, user_id: str | None = None) -> None:
+        self.user_id = user_id
+
     def build_safe_query(self, dataset_context: DatasetContext, message: str) -> tuple[str | None, str]:
         """Translate a user message into validated SQL and an evidence note."""
         try:
@@ -104,6 +107,20 @@ class LocalQueryRunner:
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         """Execute validated SQL against a dataset, capped at the requested limit."""
+        source = dataset_context.profile.get("source") or {}
+        if source.get("access_mode") == "federated" or dataset_context.status == "federated":
+            if not self.user_id:
+                raise ValueError("Federated queries require an authenticated user context")
+            from app.services.federated import execute_dataset_sql
+
+            result = execute_dataset_sql(
+                self.user_id,
+                dataset_context.project_id,
+                dataset_context.dataset_id,
+                sql,
+                limit,
+            )
+            return result.rows
         return execute_sql(dataset_context.working_path, sql, limit=limit)
 
 

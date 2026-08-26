@@ -6,12 +6,10 @@ import {
   CheckCircle2,
   Columns3,
   Database,
-  EllipsisVertical,
   FileText,
   GitCompareArrows,
   Hash,
   LayoutGrid,
-  MessageSquareText,
   Sigma,
   Type,
 } from 'lucide-react';
@@ -22,6 +20,7 @@ import { formatPercent, formatPValue, formatRange, formatText, formatValue } fro
 import { formatColumnChartContext } from '../utils/chartContext';
 import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
+import { ChartActionMenu } from './ChartActionMenu';
 import { SchemaProfileView } from './SchemaProfileView';
 import { WorkspacePageHeader } from './WorkspacePageHeader';
 
@@ -60,7 +59,6 @@ function miniData(column: ProfileColumn) {
 }
 
 function ColumnCard({ column, onAskInChat }: { column: ProfileColumn; onAskInChat?: ProfileViewProps['onAskInChat'] }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const isNumeric = column.semantic_type === 'numeric';
   const isText = column.semantic_type === 'text';
   const chartData = miniData(column);
@@ -69,7 +67,6 @@ function ColumnCard({ column, onAskInChat }: { column: ProfileColumn; onAskInCha
   const context = formatColumnChartContext(column, chartData);
   const attachChart = () => {
     if (!onAskInChat) return;
-    setMenuOpen(false);
     onAskInChat(`Chart: ${column.name}`, context);
   };
 
@@ -85,25 +82,7 @@ function ColumnCard({ column, onAskInChat }: { column: ProfileColumn; onAskInCha
             {column.semantic_type}
           </span>
           {canAttachChart ? (
-            <div className="column-menu-wrapper">
-              <button
-                className="column-menu-btn"
-                type="button"
-                onClick={() => setMenuOpen((open) => !open)}
-                title="Chart actions"
-                aria-label={`Chart actions for ${column.name}`}
-              >
-                <EllipsisVertical size={15} />
-              </button>
-              {menuOpen ? (
-                <div className="column-menu-dropdown">
-                  <button type="button" onClick={attachChart}>
-                    <MessageSquareText size={14} />
-                    Add as attachment
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <ChartActionMenu label={column.name} onAttach={attachChart} />
           ) : null}
         </div>
       </div>

@@ -110,6 +110,8 @@ export type Dataset = {
   row_count: number;
   column_count: number;
   status: string;
+  source_path?: string;
+  working_path?: string;
   created_at: string;
   /** Unified format: tables dict keyed by table name. */
   profile: {

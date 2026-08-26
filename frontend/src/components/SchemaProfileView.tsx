@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import {
   AlertTriangle, Bot, ChevronLeft, ChevronRight, Columns3,
-  Database, EllipsisVertical, FileCog, GitCompareArrows, Hash, LayoutGrid, MessageSquareText, Sigma, Type,
+  Database, FileCog, GitCompareArrows, Hash, LayoutGrid, Sigma, Type,
 } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BivariateAnalysis, RelationalSchema, RelationalTable } from '../types/domain';
@@ -9,6 +9,7 @@ import { formatPercent, formatPValue, formatRange, formatText, formatValue } fro
 import { formatColumnChartContext } from '../utils/chartContext';
 import { normalizeTopValues } from '../utils/profile';
 import { MetricCard } from './MetricCard';
+import { ChartActionMenu } from './ChartActionMenu';
 
 const COLUMNS_PER_PAGE = 6;
 type AskInChat = (label: string, context: string) => void;
@@ -41,7 +42,6 @@ function ColumnCard({
   tableName: string;
   onAskInChat?: AskInChat;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const isNum = column.semantic_type === 'numeric';
   const isTxt = column.semantic_type === 'text';
   const cd = mini(column);
@@ -49,7 +49,6 @@ function ColumnCard({
   const canAttachChart = Boolean(onAskInChat && cd.length);
   const attachChart = () => {
     if (!onAskInChat) return;
-    setMenuOpen(false);
     onAskInChat(`Chart: ${tableName}.${column.name}`, formatColumnChartContext(column, cd, { tableName }));
   };
   return (
@@ -60,25 +59,7 @@ function ColumnCard({
           <span className={`column-type-badge ${isNum ? 'numeric' : isTxt ? 'text' : 'categorical'}`}>{column.semantic_type}</span>
           {column.key_type && <span className="rel-key-badge" style={{ fontSize: '10px' }}>{column.key_type}</span>}
           {canAttachChart ? (
-            <div className="column-menu-wrapper">
-              <button
-                className="column-menu-btn"
-                type="button"
-                onClick={() => setMenuOpen((open) => !open)}
-                title="Chart actions"
-                aria-label={`Chart actions for ${tableName}.${column.name}`}
-              >
-                <EllipsisVertical size={15} />
-              </button>
-              {menuOpen ? (
-                <div className="column-menu-dropdown">
-                  <button type="button" onClick={attachChart}>
-                    <MessageSquareText size={14} />
-                    Add as attachment
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <ChartActionMenu label={`${tableName}.${column.name}`} onAttach={attachChart} />
           ) : null}
         </div>
       </div>

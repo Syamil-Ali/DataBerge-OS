@@ -194,7 +194,7 @@ def assert_schema_current() -> None:
     with connect() as conn:
         row = conn.execute("select max(version) as version from schema_migrations").fetchone()
     version = int((row or {}).get("version") or 0) if isinstance(row, dict) else int(row["version"] or 0)
-    if version < 3:
+    if version < 4:
         raise RuntimeError("Database schema is not current; run the migration command before starting the API")
 
 
@@ -236,6 +236,38 @@ def _apply_versioned_migrations(conn: Any) -> None:
             """,
             "create index if not exists idx_jobs_user_updated on background_jobs(user_id, updated_at desc)",
             "create index if not exists idx_jobs_queue_status on background_jobs(queue, status, created_at)",
+        ]),
+        (4, "federated_data_connections", [
+            """
+            create table if not exists data_connections (
+                id text primary key,
+                user_id text not null references users(id) on delete cascade,
+                project_id text not null references projects(id) on delete cascade,
+                name text not null,
+                provider text not null,
+                connector_type text not null,
+                config_json text not null,
+                encrypted_secret text not null,
+                status text not null default 'untested',
+                last_tested_at text,
+                created_at text not null,
+                updated_at text not null
+            )
+            """,
+            """
+            create table if not exists dataset_sources (
+                dataset_id text primary key references datasets(id) on delete cascade,
+                connection_id text not null references data_connections(id) on delete cascade,
+                user_id text not null references users(id) on delete cascade,
+                project_id text not null references projects(id) on delete cascade,
+                access_mode text not null,
+                resource_json text not null,
+                created_at text not null,
+                updated_at text not null
+            )
+            """,
+            "create index if not exists idx_connections_user_project on data_connections(user_id, project_id, updated_at desc)",
+            "create index if not exists idx_dataset_sources_connection on dataset_sources(connection_id)",
         ]),
     ]
     applied = {row["version"] for row in conn.execute("select version from schema_migrations").fetchall()}
@@ -699,6 +731,7 @@ def update_artifact_for_user(
 from app.storage import account_repository as _accounts
 from app.storage import job_repository as _jobs
 from app.storage import relational_repository as _relational
+from app.storage import connector_repository as _connectors
 _report_type_record = _accounts._report_type_record
 list_report_types_for_user = _accounts.list_report_types_for_user
 get_report_type_for_user = _accounts.get_report_type_for_user
@@ -738,3 +771,10 @@ get_relational_schema = _relational.get_relational_schema
 list_relational_schemas = _relational.list_relational_schemas
 update_relational_schema = _relational.update_relational_schema
 delete_relational_schema = _relational.delete_relational_schema
+create_data_connection = _connectors.create_data_connection
+list_data_connections = _connectors.list_data_connections
+get_data_connection = _connectors.get_data_connection
+update_data_connection_status = _connectors.update_data_connection_status
+delete_data_connection = _connectors.delete_data_connection
+create_dataset_source = _connectors.create_dataset_source
+get_dataset_source = _connectors.get_dataset_source

@@ -6,11 +6,13 @@ import {
   Link2,
   Table2,
   UploadCloud,
+  Database,
 } from 'lucide-react';
 import { OpenDOSMPanel } from './OpenDOSMPanel';
+import { SupabasePanel } from './SupabasePanel';
 import SampleLandingPage from './SampleLandingPage';
 
-export type LandingStep = 'landing' | 'setup' | 'file-upload' | 'dosm-connect';
+export type LandingStep = 'landing' | 'setup' | 'file-upload' | 'dosm-connect' | 'supabase-connect';
 
 function SetupHeader({ onHome, onBack, backLabel }: { onHome: () => void; onBack: () => void; backLabel: string }) {
   return (
@@ -44,6 +46,7 @@ type LandingPageProps = {
   onUpload: (file: File) => Promise<void>;
   projectId?: string | null;
   onOpenDOSMConnected?: (schemaId: string) => void;
+  onFederatedDatasetConnected?: (datasetId: string) => void;
   initialStep?: LandingStep;
   onBackHome?: () => void;
   onGetStarted?: () => void;
@@ -56,6 +59,7 @@ export function LandingPage({
   onUpload,
   projectId,
   onOpenDOSMConnected,
+  onFederatedDatasetConnected,
   initialStep = 'landing',
   onBackHome,
   onGetStarted,
@@ -169,6 +173,21 @@ export function LandingPage({
                 <em>Public data</em>
               </span>
             </button>
+
+            <button className="data-source-card" onClick={() => setStep('supabase-connect')}>
+              <span className="data-source-icon violet">
+                <Database size={25} />
+              </span>
+              <span className="data-source-copy">
+                <strong>Connect Supabase</strong>
+                <span>Query PostgreSQL tables where they live without downloading the full database.</span>
+              </span>
+              <span className="data-source-tags">
+                <em>Supabase</em>
+                <em>PostgreSQL</em>
+                <em>Live query</em>
+              </span>
+            </button>
           </section>
         </main>
       </div>
@@ -246,6 +265,29 @@ export function LandingPage({
               <OpenDOSMPanel projectId={projectId} onConnected={onOpenDOSMConnected} />
             ) : (
               <div className="setup-empty-source">OpenDOSM connector is not available in this build.</div>
+            )}
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (step === 'supabase-connect') {
+    return (
+      <div className="landing-shell setup">
+        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
+        <main className="dosm-connect-page">
+          <section className="data-setup-head">
+            <span className="setup-eyebrow">Federated database connector</span>
+            <h1>Connect Supabase</h1>
+            <p>Register a remote table for governed, on-demand queries. The complete table stays in Supabase.</p>
+            <SetupJourney />
+          </section>
+          <section className="dosm-connect-stage">
+            {projectId && onFederatedDatasetConnected ? (
+              <SupabasePanel projectId={projectId} onConnected={onFederatedDatasetConnected} />
+            ) : (
+              <div className="setup-empty-source">Supabase connector is not available in this build.</div>
             )}
           </section>
         </main>

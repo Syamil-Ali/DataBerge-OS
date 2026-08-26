@@ -104,6 +104,30 @@ create table if not exists background_jobs (
     created_at text not null,
     updated_at text not null
 );
+create table if not exists data_connections (
+    id text primary key,
+    user_id text not null references users(id) on delete cascade,
+    project_id text not null references projects(id) on delete cascade,
+    name text not null,
+    provider text not null,
+    connector_type text not null,
+    config_json text not null,
+    encrypted_secret text not null,
+    status text not null default 'untested',
+    last_tested_at text,
+    created_at text not null,
+    updated_at text not null
+);
+create table if not exists dataset_sources (
+    dataset_id text primary key references datasets(id) on delete cascade,
+    connection_id text not null references data_connections(id) on delete cascade,
+    user_id text not null references users(id) on delete cascade,
+    project_id text not null references projects(id) on delete cascade,
+    access_mode text not null,
+    resource_json text not null,
+    created_at text not null,
+    updated_at text not null
+);
 create table if not exists schema_migrations (
     version integer primary key,
     name text not null,

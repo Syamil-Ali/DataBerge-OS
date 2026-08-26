@@ -125,11 +125,13 @@ class QuerySkill:
             row_count = profile.get("row_count")
             if row_count is None:
                 row_count = dataset.get("row_count", 0)
+            profile_scope = profile.get("profile_scope") or {}
+            is_estimate = bool(profile_scope.get("row_count_is_estimate"))
             return self._profile_response(
                 dataset,
-                f"{dataset_name} has {row_count} rows.",
-                ["Answered directly from the stored dataset shape."],
-                confidence=0.99,
+                f"{dataset_name} has approximately {row_count} rows." if is_estimate else f"{dataset_name} has {row_count} rows.",
+                ["Answered from the source database row estimate." if is_estimate else "Answered directly from the stored dataset shape."],
+                confidence=0.9 if is_estimate else 0.99,
             )
 
         column_count = profile.get("column_count")

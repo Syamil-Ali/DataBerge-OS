@@ -38,7 +38,7 @@ class StorageResilienceTests(unittest.TestCase):
                 versions = [row["version"] for row in conn.execute(
                     "select version from schema_migrations order by version"
                 ).fetchall()]
-            self.assertEqual(versions, [1, 2, 3])
+            self.assertEqual(versions, [1, 2, 3, 4])
 
             user = database.create_user("owner@example.com", "Owner", "hash")
             project = database.create_project_for_user(user["id"], "Workspace")

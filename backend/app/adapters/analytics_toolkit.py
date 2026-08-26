@@ -29,7 +29,7 @@ class AnalyticsToolkit(Toolkit):
         active_dataset_id: str | None = None,
     ) -> None:
         self.profile_provider = profile_provider or LocalProfileProvider()
-        self.query_runner = query_runner or LocalQueryRunner()
+        self.query_runner = query_runner or LocalQueryRunner(user_id=self.profile_provider.user_id)
         self.artifact_store = artifact_store or LocalArtifactStore(self.profile_provider)
         self.active_project_id = active_project_id
         self.active_dataset_id = active_dataset_id

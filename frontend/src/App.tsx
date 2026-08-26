@@ -469,6 +469,16 @@ function AuthenticatedApp({
             setActiveTab('datamodel');
             await load(null, schemaId, 'schema');
           }}
+          onFederatedDatasetConnected={async (datasetId) => {
+            setReviewReturnStep('supabase-connect');
+            setPreviewMode(false);
+            setSelectedDatasetId(datasetId);
+            setActiveSchemaId(null);
+            setActiveWorkspaceKind('dataset');
+            setActiveTab('profile');
+            await load(datasetId, null, 'dataset');
+            navigate('workspace');
+          }}
         />
       </div>
     );

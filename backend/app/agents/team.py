@@ -14,7 +14,7 @@ class AnalyticsTeam:
 
     def __init__(self, user_id: str | None = None) -> None:
         self.profile_provider = LocalProfileProvider(user_id=user_id)
-        self.query_runner = LocalQueryRunner()
+        self.query_runner = LocalQueryRunner(user_id=user_id)
         self.artifact_store = LocalArtifactStore(self.profile_provider, user_id=user_id)
         self.toolkit_factory = AnalyticsToolkit
         self.agent_factory = make_agno_agent
