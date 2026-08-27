@@ -3,13 +3,10 @@ import {
   AlertTriangle, Bot, ChevronLeft, ChevronRight, Columns3,
   Database, FileCog, GitCompareArrows, Hash, LayoutGrid, Sigma, Type,
 } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BivariateAnalysis, RelationalSchema, RelationalTable } from '../types/domain';
-import { formatPercent, formatPValue, formatRange, formatText, formatValue } from '../utils/format';
-import { formatColumnChartContext } from '../utils/chartContext';
-import { normalizeTopValues } from '../utils/profile';
+import { formatPercent, formatPValue, formatText, formatValue } from '../utils/format';
 import { MetricCard } from './MetricCard';
-import { ChartActionMenu } from './ChartActionMenu';
+import { ProfileColumnCard } from './ProfileColumnCard';
 
 const COLUMNS_PER_PAGE = 6;
 type AskInChat = (label: string, context: string) => void;
@@ -18,97 +15,6 @@ function fv(v: number | null | undefined) {
   if (v === null || v === undefined) return '-';
   if (Math.abs(v) < 0.0001 && v !== 0) return v.toExponential(2);
   return formatValue(v);
-}
-
-function dv(v: unknown) {
-  return formatValue(v);
-}
-
-function mini(c: RelationalTable['columns'][number]) {
-  if (c.semantic_type === 'numeric' && c.histogram) {
-    const { bins, counts } = c.histogram;
-    return counts.map((ct, i) => ({ label: formatRange(bins[i], bins[i + 1]) || String(i + 1), count: ct }));
-  }
-  const items = normalizeTopValues(c.top_values);
-  return items.slice(0, 8).map((it) => ({ label: String(it.label).slice(0, 12), count: it.count }));
-}
-
-function ColumnCard({
-  column,
-  tableName,
-  onAskInChat,
-}: {
-  column: RelationalTable['columns'][number];
-  tableName: string;
-  onAskInChat?: AskInChat;
-}) {
-  const isNum = column.semantic_type === 'numeric';
-  const isTxt = column.semantic_type === 'text';
-  const cd = mini(column);
-  const firstTopValue = normalizeTopValues(column.top_values)[0];
-  const canAttachChart = Boolean(onAskInChat && cd.length);
-  const attachChart = () => {
-    if (!onAskInChat) return;
-    onAskInChat(`Chart: ${tableName}.${column.name}`, formatColumnChartContext(column, cd, { tableName }));
-  };
-  return (
-    <article className="column-card">
-      <div className="column-card-head">
-        <div><h3>{column.name}</h3><p>{column.duckdb_type}</p></div>
-        <div className="column-card-actions">
-          <span className={`column-type-badge ${isNum ? 'numeric' : isTxt ? 'text' : 'categorical'}`}>{column.semantic_type}</span>
-          {column.key_type && <span className="rel-key-badge" style={{ fontSize: '10px' }}>{column.key_type}</span>}
-          {canAttachChart ? (
-            <ChartActionMenu label={`${tableName}.${column.name}`} onAttach={attachChart} />
-          ) : null}
-        </div>
-      </div>
-      {column.description && <p className="column-description">{formatText(column.description)}</p>}
-      <div className="column-stats"><span>Unique: {dv(column.unique_count)}</span><span>Missing: {formatPercent(column.missing_pct)}</span></div>
-      {cd.length > 0 && (
-        <Fragment>
-          <div className={`mini-chart ${isNum ? 'numeric-mini-chart' : ''}`}>
-            <ResponsiveContainer width="100%" height={126}>
-              <BarChart data={cd} layout={isNum ? 'horizontal' : 'vertical'}>
-                {isNum
-                  ? <><XAxis dataKey="label" hide /><YAxis hide /><Bar dataKey="count" fill="#22c7da" radius={[4,4,0,0]} activeBar={{fill:'#06b6d4',stroke:'#22c7da',strokeWidth:2}} /></>
-                  : <><XAxis type="number" hide /><YAxis dataKey="label" type="category" width={70} tick={{fontSize:10,fill:'#64748b'}} /><Bar dataKey="count" fill="#34d399" radius={[0,4,4,0]} activeBar={{fill:'#10b981',stroke:'#34d399',strokeWidth:2}} /></>}
-                <Tooltip cursor={false} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {isNum && column.stats ? (
-            <div className="chart-range-labels">
-              <span>Min {dv(column.stats.min)}</span>
-              <span>Max {dv(column.stats.max)}</span>
-            </div>
-          ) : null}
-        </Fragment>
-      )}
-      {column.stats && (
-        <div className="numeric-stat-boxes">
-          <div>
-            <span>Mean</span>
-            <strong>{dv(column.stats.mean)}</strong>
-          </div>
-          <div>
-            <span>Median</span>
-            <strong>{dv(column.stats.median)}</strong>
-          </div>
-          <div>
-            <span>Std</span>
-            <strong>{dv(column.stats.std)}</strong>
-          </div>
-        </div>
-      )}
-      {!isNum && (
-        <div className="column-footer">
-          <span>{isTxt ? 'Text sample' : 'Top values'}</span>
-          <strong>{dv(column.sample_values?.[0] ?? firstTopValue?.label)}</strong>
-        </div>
-      )}
-    </article>
-  );
 }
 
 function TableReadinessPanels({
@@ -426,7 +332,7 @@ export function SchemaProfileView({ schema, onAskInChat }: { schema: RelationalS
           </div>
           <div className="column-grid">
             {visible.map((col) => (
-              <ColumnCard key={col.name} column={col} tableName={selTable} onAskInChat={onAskInChat} />
+              <ProfileColumnCard key={col.name} column={col} tableName={selTable} onAskInChat={onAskInChat} />
             ))}
           </div>
           {totalPages > 1 && (

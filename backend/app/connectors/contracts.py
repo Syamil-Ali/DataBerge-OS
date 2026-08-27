@@ -1,11 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Protocol
 
 
 class ConnectorError(RuntimeError):
     """A sanitized connector failure that is safe to return to a client."""
+
+
+def json_scalar(value: Any) -> Any:
+    """Convert connector values to stable JSON-safe scalar representations."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return value.hex()
+    return str(value)
 
 
 @dataclass(frozen=True)

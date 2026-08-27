@@ -68,7 +68,6 @@ type LandingPageProps = {
   onOpenDOSMConnected?: (schemaId: string) => void;
   onFederatedDatasetConnected?: (datasetId: string) => void;
   initialStep?: LandingStep;
-  onBackHome?: () => void;
   onGetStarted?: () => void;
   onLogin?: () => void;
   onSignUp?: () => void;
@@ -84,7 +83,6 @@ export function LandingPage({
   onOpenDOSMConnected,
   onFederatedDatasetConnected,
   initialStep = 'landing',
-  onBackHome,
   onGetStarted,
   onLogin,
   onSignUp,
@@ -107,14 +105,6 @@ export function LandingPage({
       return;
     }
     setStep('setup');
-  };
-
-  const goHome = () => {
-    if (onBackHome) {
-      onBackHome();
-      return;
-    }
-    setStep('landing');
   };
 
   const openLogin = () => {
@@ -160,7 +150,7 @@ export function LandingPage({
     return (
       <div className="landing-shell setup">
         <SetupHeader
-          onAction={onSetupExit ?? goHome}
+          onAction={onSetupExit ?? (() => setStep('landing'))}
           actionLabel={setupExitLabel}
           actionKind={setupExitKind}
         />

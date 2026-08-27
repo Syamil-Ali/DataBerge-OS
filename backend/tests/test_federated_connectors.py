@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
 from app import settings
-from app.connectors.contracts import ConnectorError, QueryResult
+from app.connectors.contracts import ConnectorError, QueryResult, json_scalar
 from app.connectors.postgres import validate_logical_select
 from app.connectors.secrets import decrypt_connector_secret, encrypt_connector_secret
 from app.services.federated import register_federated_dataset
@@ -36,6 +38,11 @@ class FakePostgresConnector:
 
 
 class FederatedConnectorTests(unittest.TestCase):
+    def test_connector_values_use_one_json_safe_normalizer(self) -> None:
+        self.assertEqual(json_scalar(Decimal("12.50")), 12.5)
+        self.assertEqual(json_scalar(date(2026, 8, 27)), "2026-08-27")
+        self.assertEqual(json_scalar(b"ok"), "6f6b")
+
     def test_connector_secrets_are_encrypted_and_round_trip(self) -> None:
         encrypted = encrypt_connector_secret({"password": "supabase-secret"})
         self.assertNotIn("supabase-secret", encrypted)

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from datetime import date, datetime
-from decimal import Decimal
 from typing import Any
 
 import pandas as pd
 
 from app import settings
 from app.connectors import get_federated_connector
-from app.connectors.contracts import QueryResult
+from app.connectors.contracts import QueryResult, json_scalar
 from app.connectors.secrets import decrypt_connector_secret
 from app.services.profiling import profile_dataframe
 from app.storage import database
@@ -43,23 +41,11 @@ def connection_runtime(user_id: str, project_id: str, connection_id: str):
     return record, connector, secret
 
 
-def _json_scalar(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool)):
-        return value
-    if isinstance(value, Decimal):
-        return float(value)
-    if isinstance(value, (date, datetime)):
-        return value.isoformat()
-    if isinstance(value, bytes):
-        return value.hex()
-    return str(value)
-
-
 def serialize_query_result(result: QueryResult) -> dict[str, Any]:
     return {
         "columns": result.columns,
         "rows": [
-            {str(key): _json_scalar(value) for key, value in row.items()}
+            {str(key): json_scalar(value) for key, value in row.items()}
             for row in result.rows
         ],
         "row_count": result.row_count,

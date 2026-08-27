@@ -4,8 +4,6 @@ import ipaddress
 import re
 import socket
 from contextlib import contextmanager
-from datetime import date, datetime
-from decimal import Decimal
 from time import perf_counter
 from typing import Any, Iterator
 
@@ -14,7 +12,7 @@ from psycopg.rows import dict_row
 from psycopg.sql import Identifier, SQL
 
 from app import settings
-from app.connectors.contracts import ConnectorCapabilities, ConnectorError, QueryResult
+from app.connectors.contracts import ConnectorCapabilities, ConnectorError, QueryResult, json_scalar
 
 
 _IDENTIFIER_RE = re.compile(r"^[^\x00]{1,128}$")
@@ -51,18 +49,6 @@ def _validate_public_host(host: str) -> str:
         if not ip.is_global:
             raise ConnectorError("Local and private database hosts are not allowed.")
     return sorted(addresses)[0]
-
-
-def _json_scalar(value: Any) -> Any:
-    if value is None or isinstance(value, (str, int, float, bool)):
-        return value
-    if isinstance(value, Decimal):
-        return float(value)
-    if isinstance(value, (date, datetime)):
-        return value.isoformat()
-    if isinstance(value, bytes):
-        return value.hex()
-    return str(value)
 
 
 def validate_logical_select(sql: str) -> str:
@@ -273,7 +259,7 @@ class PostgresFederatedConnector:
                 for item in (cursor.description or [])
             ]
             rows = [
-                {str(key): _json_scalar(value) for key, value in dict(row).items()}
+                {str(key): json_scalar(value) for key, value in dict(row).items()}
                 for row in cursor.fetchall()
             ]
         truncated = len(rows) > limit
