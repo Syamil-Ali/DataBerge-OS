@@ -740,6 +740,12 @@
   color: #ffffff;
 }
 
+.landing-shell.setup .landing-nav-back.logout:hover {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+}
+
 .data-setup-page,
 .file-upload-page,
 .dosm-connect-page {

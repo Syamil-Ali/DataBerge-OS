@@ -43,13 +43,17 @@ function AppShell({ route, navigate }: { route: AppRoute; navigate: Navigate }) 
       navigate('login', { replace: true });
       return;
     }
+    if (user && route === 'main') {
+      navigate('workspace', { replace: true });
+      return;
+    }
     if (user && (route === 'login' || route === 'signup')) {
       navigate('workspace', { replace: true });
     }
   }, [loading, navigate, route, user]);
 
   if (loading) return <div className="empty-app" style={{ display: 'grid', placeItems: 'center', minHeight: '100dvh' }}><Loader className="spinner" /></div>;
-  if (route === 'main') {
+  if (route === 'main' && !user) {
     return (
       <LandingPage
         busy={false}
@@ -71,10 +75,10 @@ function AppShell({ route, navigate }: { route: AppRoute; navigate: Navigate }) 
   }
   return (
     <AuthenticatedApp
-      route={route === 'login' || route === 'signup' ? 'workspace' : route}
+      route={route === 'main' || route === 'login' || route === 'signup' ? 'workspace' : route}
       navigate={navigate}
-      onLogout={() => {
-        logout();
+      onLogout={async () => {
+        await logout();
         navigate('main', { replace: true });
       }}
       userName={user.name}
@@ -90,7 +94,7 @@ function AuthenticatedApp({
 }: {
   route: 'upload' | 'workspace';
   navigate: (route: AppRoute, options?: { replace?: boolean }) => void;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
   userName: string;
 }) {
   const [project, setProject] = useState<Project | null>(null);
@@ -356,6 +360,7 @@ function AuthenticatedApp({
   };
 
   const hasRelationalSchemas = relationalSchemas.length > 0;
+  const hasExistingWorkspace = Boolean(selectedDataset || hasRelationalSchemas);
   const closeWorkspaceMenus = () => {
     setDatasetMenuOpen(false);
     setMobileNavOpen(false);
@@ -386,6 +391,20 @@ function AuthenticatedApp({
       </div>
     );
   }
+
+  const signOutDialog = signOutDialogOpen ? (
+    <ConfirmDialog
+      eyebrow="Confirm sign out"
+      title="Sign out of Data-Berge?"
+      message="You will return to the landing page. Your saved projects, datasets, chats, and reports will remain available."
+      confirmLabel="Sign out"
+      onCancel={() => setSignOutDialogOpen(false)}
+      onConfirm={() => {
+        setSignOutDialogOpen(false);
+        void onLogout();
+      }}
+    />
+  ) : null;
 
   if (route === 'upload' || (!selectedDataset && !hasRelationalSchemas)) {
     if (previewMode && activeSchema && project) {
@@ -449,6 +468,7 @@ function AuthenticatedApp({
 
     return (
       <div className="app-shell empty-app">
+        {signOutDialog}
         {error && (
           <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
             <div className="error-banner">{error}</div>
@@ -459,7 +479,15 @@ function AuthenticatedApp({
           onUpload={handleUpload}
           projectId={project?.id}
           initialStep={reviewReturnStep}
-          onBackHome={() => navigate('main')}
+          onSetupExit={() => {
+            if (hasExistingWorkspace) {
+              navigate('workspace');
+              return;
+            }
+            setSignOutDialogOpen(true);
+          }}
+          setupExitLabel={hasExistingWorkspace ? 'Back to workspace' : 'Log out'}
+          setupExitKind={hasExistingWorkspace ? 'back' : 'logout'}
           onOpenDOSMConnected={async (schemaId) => {
             setReviewReturnStep('dosm-connect');
             setPreviewMode(true);
@@ -486,19 +514,7 @@ function AuthenticatedApp({
 
   return (
     <div className="app-shell has-data">
-      {signOutDialogOpen && (
-        <ConfirmDialog
-          eyebrow="Confirm sign out"
-          title="Sign out of Data-Berge?"
-          message="You will return to the landing page. Your saved projects, datasets, chats, and reports will remain available."
-          confirmLabel="Sign out"
-          onCancel={() => setSignOutDialogOpen(false)}
-          onConfirm={() => {
-            setSignOutDialogOpen(false);
-            onLogout();
-          }}
-        />
-      )}
+      {signOutDialog}
       {deleteDialog && (
         <div className="app-modal-backdrop" onClick={() => setDeleteDialog(null)}>
           <div className="app-modal" onClick={(event) => event.stopPropagation()}>

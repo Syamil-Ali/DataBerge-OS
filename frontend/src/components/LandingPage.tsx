@@ -7,6 +7,7 @@ import {
   Table2,
   UploadCloud,
   Database,
+  LogOut,
 } from 'lucide-react';
 import { OpenDOSMPanel } from './OpenDOSMPanel';
 import { SupabasePanel } from './SupabasePanel';
@@ -14,16 +15,35 @@ import SampleLandingPage from './SampleLandingPage';
 
 export type LandingStep = 'landing' | 'setup' | 'file-upload' | 'dosm-connect' | 'supabase-connect';
 
-function SetupHeader({ onHome, onBack, backLabel }: { onHome: () => void; onBack: () => void; backLabel: string }) {
+function SetupHeader({
+  onBrand,
+  onAction,
+  actionLabel,
+  actionKind = 'back',
+}: {
+  onBrand?: () => void;
+  onAction: () => void;
+  actionLabel: string;
+  actionKind?: 'back' | 'logout';
+}) {
+  const brand = (
+    <>
+      <img src="/favicon.svg" alt="" />
+      <strong>Data-Berge</strong>
+    </>
+  );
   return (
     <header className="landing-nav setup-nav">
-      <button className="setup-brand" type="button" onClick={onHome} aria-label="Return to Data-Berge homepage">
-        <img src="/favicon.svg" alt="" />
-        <strong>Data-Berge</strong>
-      </button>
-      <button className="landing-nav-back" type="button" onClick={onBack}>
-        <ArrowLeft size={15} />
-        {backLabel}
+      {onBrand ? (
+        <button className="setup-brand" type="button" onClick={onBrand} aria-label="Return to data sources">
+          {brand}
+        </button>
+      ) : (
+        <div className="setup-brand">{brand}</div>
+      )}
+      <button className={`landing-nav-back ${actionKind === 'logout' ? 'logout' : ''}`} type="button" onClick={onAction}>
+        {actionKind === 'logout' ? <LogOut size={15} /> : <ArrowLeft size={15} />}
+        {actionLabel}
       </button>
     </header>
   );
@@ -52,6 +72,9 @@ type LandingPageProps = {
   onGetStarted?: () => void;
   onLogin?: () => void;
   onSignUp?: () => void;
+  onSetupExit?: () => void;
+  setupExitLabel?: string;
+  setupExitKind?: 'back' | 'logout';
 };
 
 export function LandingPage({
@@ -65,6 +88,9 @@ export function LandingPage({
   onGetStarted,
   onLogin,
   onSignUp,
+  onSetupExit,
+  setupExitLabel = 'Back to landing',
+  setupExitKind = 'back',
 }: LandingPageProps) {
   const [step, setStep] = useState<LandingStep>(initialStep);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +159,11 @@ export function LandingPage({
   if (step === 'setup') {
     return (
       <div className="landing-shell setup">
-        <SetupHeader onHome={goHome} onBack={goHome} backLabel="Back to landing" />
+        <SetupHeader
+          onAction={onSetupExit ?? goHome}
+          actionLabel={setupExitLabel}
+          actionKind={setupExitKind}
+        />
 
         <main className="data-setup-page">
           <section className="data-setup-head">
@@ -197,7 +227,7 @@ export function LandingPage({
   if (step === 'file-upload') {
     return (
       <div className="landing-shell setup">
-        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
+        <SetupHeader onBrand={() => setStep('setup')} onAction={() => setStep('setup')} actionLabel="Choose another source" />
 
         <main className="file-upload-page">
           <section className="data-setup-head">
@@ -250,7 +280,7 @@ export function LandingPage({
   if (step === 'dosm-connect') {
     return (
       <div className="landing-shell setup">
-        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
+        <SetupHeader onBrand={() => setStep('setup')} onAction={() => setStep('setup')} actionLabel="Choose another source" />
 
         <main className="dosm-connect-page">
           <section className="data-setup-head">
@@ -275,7 +305,7 @@ export function LandingPage({
   if (step === 'supabase-connect') {
     return (
       <div className="landing-shell setup">
-        <SetupHeader onHome={goHome} onBack={() => setStep('setup')} backLabel="Choose another source" />
+        <SetupHeader onBrand={() => setStep('setup')} onAction={() => setStep('setup')} actionLabel="Choose another source" />
         <main className="dosm-connect-page">
           <section className="data-setup-head">
             <span className="setup-eyebrow">Federated database connector</span>
