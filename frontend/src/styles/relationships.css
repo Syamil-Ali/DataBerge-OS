@@ -8,11 +8,11 @@
   gap: 20px;
 }
 
-/* Keep the relationship canvas aligned with the bottom of the app sidebar. */
+/* Let the model grow with its tables instead of splitting a fixed-height canvas. */
 .rel-editor.relationship-mode {
-  height: max(980px, calc(100vh - 52px));
+  height: auto;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .rel-editor.preview-mode {
@@ -555,27 +555,13 @@
 
 .rel-model-tables {
   min-height: 0;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   align-content: start;
   align-items: start;
-  gap: 10px;
+  gap: 16px;
   min-width: 0;
-  padding: 10px;
-}
-
-.rel-editor.relationship-mode .rel-model-table-section {
-  height: 0;
-  flex: 1 1 0;
-}
-
-.rel-editor.relationship-mode .rel-model-tables {
-  flex: 1 1 auto;
+  padding: 16px;
 }
 
 .rel-model-table {
@@ -593,7 +579,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 10px;
+  padding: 12px 14px;
   border-bottom: 1px solid #eff6ff;
   background: #f8fbff;
   color: #172033;
@@ -614,53 +600,28 @@
 }
 
 .rel-model-table-head strong {
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .rel-model-table-head span {
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .rel-model-columns {
-  height: 132px;
-  max-height: 132px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  padding: 6px;
+  padding: 8px;
   display: grid;
-  gap: 2px;
-}
-
-.rel-model-columns::-webkit-scrollbar {
-  width: 8px;
-}
-
-.rel-model-columns::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: #eef2f7;
-}
-
-.rel-model-columns::-webkit-scrollbar-thumb {
-  border: 2px solid #eef2f7;
-  border-radius: 999px;
-  background: #94a3b8;
-}
-
-.rel-model-columns::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  gap: 4px;
 }
 
 .rel-model-column {
-  min-height: 24px;
+  min-height: 34px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 6px;
+  gap: 8px;
+  padding: 5px 8px;
   border: 1px solid transparent;
   border-radius: 6px;
   color: #334155;
@@ -684,8 +645,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10.5px;
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .rel-model-column-actions {
@@ -724,8 +685,8 @@
 }
 
 .rel-editor.relationship-mode .rel-model-flow {
-  min-height: 360px;
-  max-height: 54%;
+  min-height: 0;
+  max-height: none;
   overflow: hidden;
   flex: 0 1 auto;
 }
@@ -784,6 +745,10 @@
   background: #f8fafc;
 }
 
+.rel-flow-summary {
+  min-width: 0;
+}
+
 .rel-flow-endpoints {
   min-width: 0;
   display: flex;
@@ -837,6 +802,60 @@
   color: #64748b;
   font-size: 10.5px;
   font-weight: 650;
+}
+
+.rel-evidence {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.rel-evidence summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.rel-evidence summary::-webkit-details-marker {
+  display: none;
+}
+
+.rel-recommendation {
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rel-recommendation.recommended,
+.rel-recommendation.confirmed {
+  background: #cffafe;
+  color: #087f91;
+}
+
+.rel-recommendation.needs_review,
+.rel-recommendation.rejected {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.rel-evidence-detail {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 7px 8px;
+  border-left: 2px solid #08b5cf;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.rel-evidence-detail strong {
+  color: #172033;
+  font-weight: 700;
 }
 
 .dict-panel {

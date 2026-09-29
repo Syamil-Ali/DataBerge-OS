@@ -175,6 +175,16 @@ export type RelationalRelationship = {
   cardinality?: 'one_to_one' | 'one_to_many' | 'many_to_one' | 'many_to_many';
   coverage?: number;
   active?: boolean;
+  recommendation?: 'recommended' | 'needs_review' | 'rejected' | 'confirmed';
+  evidence?: {
+    parent_unique_ratio: number;
+    child_match_ratio: number;
+    orphan_count: number;
+    null_count: number;
+    type_compatible: boolean;
+    sample_matches: [string, string][];
+    sample_orphans: string[];
+  };
 };
 
 export type ModelTransformation = {

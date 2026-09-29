@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data-Berge OS — Interview Prep</title>
+  <style>
+    :root { --navy:#0b1624; --ink:#172033; --cyan:#08b5cf; --teal:#087f91; --bg:#f8fafc; --muted:#64748b; --line:#dbe5ed; --card:#fff; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--bg); font-family:Arial, sans-serif; line-height:1.55; }
+    .hero { color:#fff; background:linear-gradient(135deg,var(--navy),#12334a); padding:56px max(24px,calc((100% - 1120px)/2)); }
+    .eyebrow { color:#73e3ef; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+    h1,h2,h3 { line-height:1.15; margin:0 0 14px; }
+    h1 { max-width:760px; font-size:clamp(34px,6vw,66px); letter-spacing:-.04em; }
+    h2 { font-size:28px; margin-top:8px; }
+    h3 { font-size:18px; }
+    .hero p { max-width:760px; color:#d8e8f0; font-size:18px; }
+    main { max-width:1120px; margin:0 auto; padding:30px 24px 70px; }
+    section { margin:34px 0; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:0 8px 22px #17203308; }
+    .card.accent { border-top:4px solid var(--cyan); }
+    .wide { grid-column:1/-1; }
+    .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:18px; }
+    .step { padding:16px; background:#e8f8fb; border:1px solid #b8eaf0; border-radius:10px; }
+    .step b { display:block; color:var(--teal); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
+    code { color:#075b69; background:#edf5f7; padding:2px 5px; border-radius:4px; font-size:.92em; }
+    pre { overflow:auto; background:var(--navy); color:#dff8fb; border-radius:10px; padding:18px; font-size:13px; }
+    ul { padding-left:21px; margin:10px 0 0; }
+    li { margin:7px 0; }
+    .quote { border-left:4px solid var(--cyan); background:#effbfd; padding:18px 20px; border-radius:0 10px 10px 0; font-size:17px; }
+    .qa h3 { color:var(--teal); margin-bottom:6px; }
+    .qa { padding:16px 0; border-bottom:1px solid var(--line); }
+    .qa:last-child { border-bottom:0; }
+    .tag { display:inline-block; border-radius:999px; padding:4px 9px; margin:3px 4px 3px 0; background:#e7f8fb; color:#075b69; font-size:12px; font-weight:700; }
+    .small { color:var(--muted); font-size:14px; }
+    a { color:var(--teal); }
+    footer { max-width:1120px; margin:auto; padding:0 24px 30px; color:var(--muted); font-size:13px; }
+    @media (max-width:700px) { .grid,.flow { grid-template-columns:1fr; } .wide { grid-column:auto; } .hero { padding:40px 22px; } main { padding:24px 16px 50px; } }
+    @media print { .hero { padding:28px; } .card { box-shadow:none; break-inside:avoid; } section { margin:20px 0; } }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="eyebrow">Software Developer Interview · Utopia Group Sdn Bhd</div>
+    <h1>Explain Data-Berge OS with confidence.</h1>
+    <p>A fast briefing for discussing the product, architecture, AI design, security decisions, trade-offs, and your next steps.</p>
+  </header>
+
+  <main>
+    <section>
+      <div class="card accent">
+        <h2>Your 90-second answer</h2>
+        <div class="quote">Data-Berge OS is a multi-tenant analytics workspace. A user can upload CSV or Excel files, connect to public datasets, or register a remote PostgreSQL/Supabase table. The backend profiles the data—types, missingness, duplicates, statistics, correlations, and quality flags—and stores that profile for reuse.<br><br>
+        Users can ask questions through chat, create charts, and generate executive reports. The AI architecture uses a manager agent to route requests to a Data Analyst, Data Engineer, or Report Agent. The model handles intent and planning, while deterministic services perform profiling and restricted SQL execution.<br><br>
+        For remote databases, the system uses federation instead of copying the whole database. Credentials are encrypted and queries are bounded, read-only, and limited to the registered table. The stack is React and TypeScript, FastAPI and Python, PostgreSQL, Redis, S3-compatible storage, and background workers.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Product in one glance</h2>
+      <div class="flow">
+        <div class="step"><b>1 · Ingest</b>Upload files or connect to a remote data source.</div>
+        <div class="step"><b>2 · Understand</b>Profile structure, quality, types, and relationships.</div>
+        <div class="step"><b>3 · Explore</b>Ask questions, run safe calculations, and create charts.</div>
+        <div class="step"><b>4 · Communicate</b>Approve and generate an executive report.</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h3>Frontend</h3>
+        <span class="tag">React 19</span><span class="tag">TypeScript</span><span class="tag">Vite</span><span class="tag">Recharts</span>
+        <p>The workspace owns routing, authentication-aware screens, dataset selection, profile views, chat, relationship editing, and report presentation.</p>
+        <p class="small">Start at <code>frontend/src/App.tsx</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Backend</h3>
+        <span class="tag">FastAPI</span><span class="tag">Python</span><span class="tag">Pydantic</span><span class="tag">DuckDB</span>
+        <p>API routes validate requests, workflows coordinate use cases, services execute analytics, and repositories isolate persistence.</p>
+        <p class="small">Start at <code>backend/app/main.py</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Production boundary</h3>
+        <p>PostgreSQL stores metadata and durable job state. S3-compatible storage owns files. Redis/RQ handles queues. Stateless API replicas and independent workers can scale separately.</p>
+      </div>
+      <div class="card">
+        <h3>Important distinction</h3>
+        <p><strong>Materialized:</strong> CSV, Excel, and OpenDOSM are downloaded/profiled locally.</p>
+        <p><strong>Federated:</strong> PostgreSQL/Supabase data stays remote; Data-Berge stores connection metadata and queries a bounded logical dataset.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <h2>How the AI works</h2>
+        <pre>user question
+    ↓
+Team Manager: respond or delegate
+    ↓
+Data Analyst | Data Engineer | Report Agent
+    ↓
+typed tools: profile, safe SQL, chart, report
+    ↓
+answer + evidence + confidence + persisted artifact</pre>
+        <p><strong>Key sentence:</strong> “The LLM is not the source of truth. It chooses the action and specialist; deterministic tools produce the evidence.”</p>
+        <ul>
+          <li><strong>Data Analyst:</strong> facts, calculations, profiling, trends, charts.</li>
+          <li><strong>Data Engineer:</strong> data quality, typing, joins, schema readiness.</li>
+          <li><strong>Report Agent:</strong> report planning, revision, approval, and generation.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Security talking points</h2>
+        <ul>
+          <li>HttpOnly JWT session cookies plus a separate CSRF token.</li>
+          <li>Bcrypt password hashing.</li>
+          <li>Every project and dataset lookup validates user ownership.</li>
+          <li>Connector secrets are encrypted and never returned to the browser.</li>
+          <li>Federated queries are read-only, timed out, and result-limited.</li>
+          <li>Private hosts, system schemas, multiple statements, joins, and dangerous functions are rejected.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Honest limitations</h2>
+        <ul>
+          <li>Model-led routing can still misclassify unusual requests.</li>
+          <li>Regex SQL validation should eventually be complemented by an SQL parser/AST approach.</li>
+          <li>Federated profiles are based on a bounded sample and estimated row count.</li>
+          <li>Fine-grained RBAC, append-only audit events, retention, and disaster recovery are future enterprise work.</li>
+        </ul>
+        <p><strong>Improvement answer:</strong> “I would add an evaluation dataset for routing and answer correctness, measure latency/cost, and expand auditability and lineage.”</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="card">
+        <h2>Likely questions</h2>
+        <div class="qa"><h3>Why use multiple agents?</h3><p>To separate responsibilities and reduce uncontrolled behavior. Each specialist has a narrower role, tools, and validation path.</p></div>
+        <div class="qa"><h3>How do you reduce hallucinations?</h3><p>Dataset facts are delegated to tools. Counts come from profiles or SQL results, responses include evidence, and simple shape questions can use deterministic code without an LLM.</p></div>
+        <div class="qa"><h3>What happens when the model fails?</h3><p>Structured decisions are validated. Invalid or unavailable manager output falls back to deterministic routing, and greetings stay out of analytical agents.</p></div>
+        <div class="qa"><h3>How would you scale it?</h3><p>Keep APIs stateless, move long work to workers, use PostgreSQL for metadata, S3 for files, Redis/RQ for queues, and scale API and worker replicas independently.</p></div>
+        <div class="qa"><h3>What would you improve first?</h3><p>Build a production evaluation set, add richer observability for quality/latency/cost, strengthen SQL validation, and add audit logs and lineage.</p></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Questions to ask</h2>
+        <ul>
+          <li>How do you evaluate AI features: business outcomes, quality, automation rate, latency, or cost?</li>
+          <li>How do developers work with operational teams across the group to identify useful workflows?</li>
+          <li>Do you prefer a centralized platform or small systems tailored to each business unit?</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Last-minute checklist</h2>
+        <ul>
+          <li>Practice the 90-second answer twice.</li>
+          <li>Explain one upload request end to end.</li>
+          <li>Explain one chat request through the manager and analyst.</li>
+          <li>Explain materialized versus federated data.</li>
+          <li>Be honest about what you personally implemented.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <footer>
+    Repository references: <code>README.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>backend/app/workflows/</code>, <code>backend/app/agents/</code>. Utopia context: <a href="https://www.utopiagroup.com.my/" target="_blank" rel="noreferrer">utopiagroup.com.my</a> and <a href="https://www.utopiagroup.com.my/career" target="_blank" rel="noreferrer">career page</a>.
+  </footer>
+</body>
+</html>

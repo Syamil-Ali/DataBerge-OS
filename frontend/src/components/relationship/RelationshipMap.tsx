@@ -15,6 +15,16 @@ const methodLabel = (method: string) => {
   return 'Name match';
 };
 
+const recommendationLabel = (recommendation?: RelationalRelationship['recommendation']) => {
+  if (recommendation === 'recommended') return 'Recommended';
+  if (recommendation === 'confirmed') return 'Confirmed';
+  if (recommendation === 'rejected') return 'Rejected';
+  return 'Needs review';
+};
+
+const percent = (value: number) => `${Math.round(value * 100)}%`;
+const INITIAL_COLUMN_COUNT = 8;
+
 export function RelationshipMap({
   tables,
   relationships,
@@ -49,7 +59,7 @@ export function RelationshipMap({
     setVisibleCounts((prev) => {
       const next: Record<string, number> = {};
       for (const name of tableNames) {
-        next[name] = Math.min(prev[name] ?? 10, tables[name].columns.length);
+        next[name] = Math.min(prev[name] ?? INITIAL_COLUMN_COUNT, tables[name].columns.length);
       }
       return next;
     });
@@ -100,6 +110,7 @@ export function RelationshipMap({
               const key = relationshipKey(rel);
               const isHighlighted = highlightedRelationshipKeys.has(key);
               const enabled = activeIndexes.has(index);
+              const evidence = rel.evidence;
               return (
                 <div
                   className={`rel-model-flow-item ${isHighlighted ? 'highlighted' : ''} ${enabled ? '' : 'disabled'}`}
@@ -111,10 +122,31 @@ export function RelationshipMap({
                     setPinnedRelationship((prev) => (prev === key ? null : key));
                   }}
                 >
-                  <div className="rel-flow-endpoints">
-                    <span>{rel.from_table}.{rel.from_column}</span>
-                    <ArrowRight size={13} />
-                    <span>{rel.to_table}.{rel.to_column}</span>
+                  <div className="rel-flow-summary">
+                    <div className="rel-flow-endpoints">
+                      <span>{rel.from_table}.{rel.from_column}</span>
+                      <ArrowRight size={13} />
+                      <span>{rel.to_table}.{rel.to_column}</span>
+                    </div>
+                    {evidence ? (
+                      <details className="rel-evidence" onClick={(event) => event.stopPropagation()}>
+                        <summary>
+                          <span className={`rel-recommendation ${rel.recommendation ?? 'needs_review'}`}>
+                            {recommendationLabel(rel.recommendation)}
+                          </span>
+                          <span>{percent(evidence.child_match_ratio)} match</span>
+                          <span>{evidence.orphan_count} orphan{evidence.orphan_count === 1 ? '' : 's'}</span>
+                        </summary>
+                        <div className="rel-evidence-detail">
+                          <span>Parent uniqueness <strong>{percent(evidence.parent_unique_ratio)}</strong></span>
+                          <span>Null child values <strong>{evidence.null_count}</strong></span>
+                          <span>Types <strong>{evidence.type_compatible ? 'Compatible' : 'Review required'}</strong></span>
+                          {evidence.sample_orphans.length ? (
+                            <span>Example unmatched values <strong>{evidence.sample_orphans.join(', ')}</strong></span>
+                          ) : null}
+                        </div>
+                      </details>
+                    ) : null}
                   </div>
                   <div className="rel-flow-meta">
                     <select
@@ -179,7 +211,7 @@ export function RelationshipMap({
         <div className="rel-model-tables">
           {tableNames.map((name) => {
             const table = tables[name];
-            const visibleCount = visibleCounts[name] ?? Math.min(10, table.columns.length);
+            const visibleCount = visibleCounts[name] ?? Math.min(INITIAL_COLUMN_COUNT, table.columns.length);
             const visibleColumns = table.columns.slice(0, visibleCount);
             const remaining = Math.max(table.columns.length - visibleCount, 0);
 
@@ -227,13 +259,13 @@ export function RelationshipMap({
                         [name]: Math.min((prev[name] ?? visibleCount) + 10, table.columns.length),
                       }))}
                     >
-                      Show 10 more
+                      Show {Math.min(10, remaining)} more
                     </button>
                     <button
                       type="button"
                       onClick={() => setVisibleCounts((prev) => ({ ...prev, [name]: table.columns.length }))}
                     >
-                      Show all
+                      Show all {table.columns.length} columns
                     </button>
                   </div>
                 )}

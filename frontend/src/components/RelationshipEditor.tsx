@@ -113,6 +113,7 @@ export function RelationshipEditor({
         ...rel,
         id: relationshipKey(rel),
         active: enabledSet.has(index),
+        recommendation: enabledSet.has(index) && rel.recommendation ? 'confirmed' : rel.recommendation,
       }));
       const result = await updateRelationalSchema(projectId, schema.id, {
         relationships: relationshipsToSave,

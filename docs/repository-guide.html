@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A practical map of the Data-Berge OS repository.">
+  <title>Data-Berge OS — Repository guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500;12..96,75..100,600;12..96,75..100,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#172033; --deep:#0b1624; --cyan:#08b5cf; --teal:#087f91; --page:#f8fafc; --muted:#64748b; --line:#e2e8f0; --soft:#e9f9fc; --code:#102033; }
+    * { box-sizing:border-box; } html { scroll-behavior:smooth; } body { margin:0; color:var(--ink); background:var(--page); font:15px/1.6 "DM Sans",sans-serif; }
+    a { color:var(--teal); text-decoration:none; } a:hover { text-decoration:underline; }
+    .shell { display:grid; grid-template-columns:276px minmax(0,1fr); min-height:100dvh; }
+    aside { position:sticky; top:0; height:100dvh; overflow:auto; padding:28px 20px; background:var(--deep); color:#dbeafe; }
+    .brand { display:flex; gap:10px; align-items:center; margin-bottom:28px; color:#fff; font:600 18px/1.15 "Bricolage Grotesque",sans-serif; }
+    .brand-mark { width:30px; height:30px; display:grid; place-items:center; border-radius:8px; color:var(--deep); background:var(--cyan); font:700 15px "JetBrains Mono",monospace; }
+    .eyebrow { margin:0 0 6px; color:var(--teal); font:600 11px/1.3 "DM Sans",sans-serif; letter-spacing:.09em; text-transform:uppercase; } aside .eyebrow { color:#67e8f9; }
+    nav a { display:block; padding:8px 10px; margin:2px 0; border-radius:7px; color:#b8c6d9; font-size:14px; } nav a:hover { color:#fff; background:rgba(8,181,207,.16); text-decoration:none; }
+    .side-note { margin-top:30px; padding:13px; border:1px solid rgba(125,211,252,.22); border-radius:10px; color:#cbd5e1; background:rgba(255,255,255,.04); font-size:13px; }
+    main { width:min(1120px,100%); padding:50px clamp(22px,5vw,68px) 80px; } header { padding-bottom:34px; border-bottom:1px solid var(--line); }
+    h1,h2,h3 { color:var(--ink); font-family:"Bricolage Grotesque",sans-serif; line-height:1.16; } h1 { max-width:770px; margin:0; font-size:clamp(32px,5vw,52px); letter-spacing:-.04em; } h2 { margin:0 0 16px; font-size:28px; letter-spacing:-.025em; } h3 { margin:0 0 7px; font-size:18px; }
+    .lede { max-width:720px; margin:17px 0 0; color:var(--muted); font-size:18px; }
+    .search { width:min(570px,100%); margin-top:25px; position:relative; } .search input { width:100%; height:42px; padding:0 40px 0 14px; border:1px solid #cbd5e1; border-radius:8px; outline:none; color:var(--ink); background:#fff; font:14px "DM Sans",sans-serif; } .search input:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(8,181,207,.16); } .search span { position:absolute; right:13px; top:9px; color:var(--muted); font:18px "JetBrains Mono",monospace; }
+    section { padding:48px 0 0; scroll-margin-top:18px; } .grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:15px; } .card { grid-column:span 4; min-width:0; padding:18px; border:1px solid var(--line); border-radius:13px; background:#fff; } .card.wide { grid-column:span 8; } .card.full { grid-column:1 / -1; }
+    .path { display:inline-block; margin-bottom:10px; color:var(--teal); font:500 12px/1.2 "JetBrains Mono",monospace; overflow-wrap:anywhere; } .card p { margin:0; color:var(--muted); font-size:14px; }
+    .flow { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:stretch; gap:8px; margin:23px 0; } .node { position:relative; padding:15px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; text-align:center; } .node strong { display:block; font:600 14px "Bricolage Grotesque",sans-serif; } .node small { display:block; margin-top:4px; color:var(--muted); font-size:12px; line-height:1.35; }
+    .node:not(:last-child)::after { position:absolute; right:-7px; top:50%; z-index:1; width:7px; height:2px; background:var(--cyan); content:""; } .node:not(:last-child)::before { position:absolute; right:-7px; top:calc(50% - 3px); z-index:2; border:4px solid transparent; border-left-color:var(--cyan); content:""; transform:translateX(5px); }
+    .diagram { padding:20px; border:1px solid var(--line); border-radius:14px; background:linear-gradient(135deg,#fff,var(--soft)); } .diagram-row { display:flex; align-items:center; justify-content:center; gap:9px; flex-wrap:wrap; } .pill { padding:8px 11px; border:1px solid #bdebf2; border-radius:8px; color:var(--ink); background:#fff; font:500 13px "JetBrains Mono",monospace; } .arrow { color:var(--teal); font-size:20px; }
+    code { padding:2px 5px; border-radius:4px; color:#075d6c; background:#e7f8fb; font:12px "JetBrains Mono",monospace; } pre { overflow:auto; margin:0; padding:16px; border-radius:10px; color:#dce9f6; background:var(--code); font:13px/1.55 "JetBrains Mono",monospace; }
+    table { width:100%; border-collapse:collapse; font-size:14px; } th { color:#475569; font-weight:600; text-align:left; } th,td { padding:12px 10px; border-bottom:1px solid var(--line); vertical-align:top; } td:first-child { width:30%; color:var(--teal); font:500 12px "JetBrains Mono",monospace; overflow-wrap:anywhere; }
+    .callout { padding:16px 18px; border-left:3px solid var(--cyan); border-radius:0 10px 10px 0; color:#38516a; background:var(--soft); } .callout strong { color:var(--ink); }
+    .steps { counter-reset:step; display:grid; gap:11px; padding:0; list-style:none; } .steps li { position:relative; min-height:42px; padding:9px 10px 9px 53px; border-bottom:1px solid var(--line); } .steps li::before { position:absolute; left:0; top:8px; display:grid; width:31px; height:31px; place-items:center; border-radius:50%; color:var(--teal); background:var(--soft); content:counter(step); counter-increment:step; font:600 13px "JetBrains Mono",monospace; }
+    .hidden-by-search { display:none; } footer { margin-top:54px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+    @media (max-width:850px) { .shell { display:block; } aside { position:relative; height:auto; padding:18px 22px; } nav { display:flex; flex-wrap:wrap; gap:3px; } nav a { padding:6px 8px; } .side-note { display:none; } main { padding-top:34px; } .flow { grid-template-columns:1fr; } .node:not(:last-child)::after { top:auto; right:50%; bottom:-8px; width:2px; height:8px; } .node:not(:last-child)::before { top:auto; right:calc(50% - 3px); bottom:-11px; transform:rotate(90deg); } }
+    @media (max-width:620px) { .card,.card.wide { grid-column:1 / -1; } h1 { font-size:36px; } .lede { font-size:16px; } th,td { padding:10px 6px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand"><span class="brand-mark">DB</span><span>Repository guide</span></div>
+      <nav aria-label="Guide sections">
+        <a href="#orientation">Start here</a><a href="#map">Repository map</a><a href="#request-flow">Request flow</a><a href="#data-flow">Data and jobs</a><a href="#where-to-work">Where to work</a><a href="#run-it">Run and test</a><a href="#deployment">Deployment model</a><a href="#safe-cleanup">Local files</a>
+      </nav>
+      <div class="side-note">Read the code in this order: <code>README.md</code>, <code>docs/ARCHITECTURE.md</code>, then the focused path for the feature you want to understand.</div>
+    </aside>
+    <main>
+      <header id="orientation">
+        <p class="eyebrow">Data-Berge OS / newcomer map</p>
+        <h1>Understand the product before changing the code.</h1>
+        <p class="lede">Data-Berge OS is a multi-tenant analytics workspace. People upload files or connect a remote database, explore governed data, ask questions, create charts, and generate reports.</p>
+        <label class="search" for="guide-search"><input id="guide-search" type="search" placeholder="Filter this guide: try “upload”, “report”, or “database”" autocomplete="off"><span>⌕</span></label>
+      </header>
+
+      <section id="map" data-searchable>
+        <p class="eyebrow">1 / The map</p><h2>One product, two main applications</h2>
+        <div class="grid">
+          <article class="card"><span class="path">frontend/</span><h3>What the user sees</h3><p>React + TypeScript user interface. It owns screens, browser routing, API calls, visualizations, and session state.</p></article>
+          <article class="card"><span class="path">backend/</span><h3>What does the work</h3><p>FastAPI service and background worker. It owns authentication, tenant checks, file processing, data queries, connectors, reports, and storage access.</p></article>
+          <article class="card"><span class="path">docs/ · deploy/ · tests/</span><h3>How it operates</h3><p>Architecture and runbooks, deployment references, and load tests. These explain and validate the running product rather than deliver features directly.</p></article>
+          <article class="card full"><h3>Top-level essentials</h3><table><thead><tr><th>Path</th><th>Why it matters</th></tr></thead><tbody>
+            <tr><td>README.md</td><td>Project overview and first entry point.</td></tr><tr><td>AGENTS.md</td><td>Durable product, security, design, and verification rules for every change.</td></tr><tr><td>docker-compose.yml</td><td>Runs the full local stack: PostgreSQL, Redis, MinIO, migration, API, worker, and frontend.</td></tr><tr><td>docs/ARCHITECTURE.md</td><td>The intended production topology and responsibility boundaries.</td></tr><tr><td>docs/RUNBOOK.md</td><td>How to deploy, monitor, scale, back up, and recover the product.</td></tr>
+          </tbody></table></article>
+        </div>
+      </section>
+
+      <section id="request-flow" data-searchable>
+        <p class="eyebrow">2 / A normal browser request</p><h2>Follow one request end to end</h2>
+        <div class="flow" aria-label="Browser request flow"><div class="node"><strong>Browser</strong><small>A user opens the workspace.</small></div><div class="node"><strong>React</strong><small><code>App.tsx</code> selects the screen.</small></div><div class="node"><strong>API client</strong><small><code>services/api.ts</code> calls <code>/api</code>.</small></div><div class="node"><strong>FastAPI route</strong><small><code>app/api/</code> validates the request.</small></div><div class="node"><strong>Workflow + storage</strong><small>Business work runs and responds.</small></div></div>
+        <div class="grid"><article class="card wide"><h3>The frontend entry points</h3><p><code>frontend/src/main.tsx</code> boots React. <code>App.tsx</code> decides which page to show. <code>routing/useAppRoute.ts</code> owns browser history. <code>contexts/AuthContext.tsx</code> keeps the signed-in user available.</p></article><article class="card"><h3>The backend entry point</h3><p><code>backend/app/main.py</code> creates FastAPI, installs middleware, exposes health checks, and attaches each API router.</p></article><article class="card full"><div class="callout"><strong>Useful mental model:</strong> a route should be thin. It accepts HTTP input and enforces access. A workflow coordinates the use case. Services and repositories do the specific technical work.</div></article></div>
+      </section>
+
+      <section id="data-flow" data-searchable>
+        <p class="eyebrow">3 / Data, analysis, and background jobs</p><h2>There are two types of data source</h2>
+        <div class="grid"><article class="card wide"><h3>Materialized sources: files and OpenDOSM</h3><p>CSV and Excel uploads, plus downloaded OpenDOSM data, become local working data for DuckDB-backed analysis. In production, original and generated files belong in object storage.</p><div class="diagram" style="margin-top:16px"><div class="diagram-row"><span class="pill">Upload / download</span><span class="arrow">→</span><span class="pill">Profile</span><span class="arrow">→</span><span class="pill">Object storage</span><span class="arrow">→</span><span class="pill">DuckDB query</span></div></div></article><article class="card"><h3>Federated sources: Supabase</h3><p>The selected PostgreSQL table stays remote. The app stores encrypted connection metadata and sends bounded, read-only queries only when needed.</p></article><article class="card full"><h3>Why a worker exists</h3><p>Report generation and connector operations can take longer than a normal web request. The API puts jobs into Redis; <code>backend/scripts/worker.py</code> consumes them. PostgreSQL tracks durable job state, while Redis coordinates queued work.</p></article></div>
+        <div class="diagram" style="margin-top:15px" aria-label="Background job flow"><div class="diagram-row"><span class="pill">API route</span><span class="arrow">→</span><span class="pill">Redis queue</span><span class="arrow">→</span><span class="pill">Worker</span><span class="arrow">→</span><span class="pill">Report / connector work</span><span class="arrow">→</span><span class="pill">PostgreSQL + S3</span></div></div>
+      </section>
+
+      <section id="where-to-work" data-searchable>
+        <p class="eyebrow">4 / Where should I edit?</p><h2>Navigate by the user-visible feature</h2>
+        <div class="grid"><article class="card full"><table><thead><tr><th>I want to understand or change…</th><th>Start here</th></tr></thead><tbody>
+          <tr><td>Login, cookies, CSRF, or account behavior</td><td><code>frontend/src/contexts/AuthContext.tsx</code>, <code>backend/app/api/auth.py</code>, <code>backend/app/auth/security.py</code>, <code>backend/app/middleware/production.py</code></td></tr>
+          <tr><td>Public marketing page</td><td><code>frontend/src/components/SampleLandingPage.tsx</code> and <code>frontend/src/landing.css</code></td></tr>
+          <tr><td>Authenticated connect-data screens</td><td><code>frontend/src/components/LandingPage.tsx</code>, <code>OpenDOSMPanel.tsx</code>, and <code>SupabasePanel.tsx</code></td></tr>
+          <tr><td>Uploads and file safety</td><td><code>backend/app/workflows/upload_workflow.py</code> and <code>backend/app/services/files.py</code></td></tr>
+          <tr><td>Workspace, profiles, relationships, or charts</td><td><code>frontend/src/components/</code>, especially <code>ProfileView.tsx</code>, <code>RelationshipEditor.tsx</code>, and <code>ChartBlock.tsx</code></td></tr>
+          <tr><td>Chat and AI orchestration</td><td><code>backend/app/workflows/chat_workflow.py</code> and <code>backend/app/agents/</code></td></tr>
+          <tr><td>Reports</td><td><code>frontend/src/components/report/</code>, <code>backend/app/workflows/report_workflow.py</code>, and <code>backend/data_berge_core/skills/reporting.py</code></td></tr>
+          <tr><td>Supabase / PostgreSQL connections</td><td><code>backend/app/api/connections.py</code>, <code>backend/app/connectors/</code>, and <code>backend/app/services/federated.py</code></td></tr>
+          <tr><td>Database schema or data ownership</td><td><code>backend/app/storage/</code>; start with <code>database.py</code>, then the domain repository.</td></tr>
+          <tr><td>Environment configuration</td><td><code>backend/app/settings.py</code>, <code>backend/.env.example</code>, and <code>backend/.env.production.example</code></td></tr>
+        </tbody></table></article></div>
+      </section>
+
+      <section id="run-it" data-searchable>
+        <p class="eyebrow">5 / Local development</p><h2>Choose the smallest useful way to run it</h2>
+        <div class="grid"><article class="card wide"><h3>Full stack</h3><p>Use this when testing production-like behavior: PostgreSQL, Redis queues, S3-compatible object storage, migrations, API, worker, and frontend.</p><pre>docker compose up -d
+docker compose ps</pre></article><article class="card"><h3>Frontend only</h3><p>Use this for UI work while the backend is already running.</p><pre>cd frontend
+npm ci
+npm run dev</pre></article><article class="card full"><h3>Before handing off a change</h3><pre>cd frontend
+npm run test:run
+npm run build
+
+cd ..\backend
+.venv\Scripts\python.exe -m compileall -q app data_berge_core scripts
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+.venv\Scripts\python.exe -m pip check</pre></article></div>
+      </section>
+
+      <section id="deployment" data-searchable>
+        <p class="eyebrow">6 / Production and AWS</p><h2>The local stack maps directly to production responsibilities</h2>
+        <div class="grid"><article class="card full"><table><thead><tr><th>Local component</th><th>Production responsibility</th><th>AWS direction</th></tr></thead><tbody>
+          <tr><td>Frontend Nginx container</td><td>Serve static React files and direct API traffic.</td><td>S3 + CloudFront now; use a CloudFront behavior for <code>/api/*</code> later.</td></tr>
+          <tr><td>FastAPI backend container</td><td>Stateless HTTP API.</td><td>EC2 initially; ECS/Fargate when independent scaling is justified.</td></tr>
+          <tr><td>Worker container</td><td>Long-running reports and connector tasks.</td><td>Same EC2 initially; separate ECS service later.</td></tr>
+          <tr><td>PostgreSQL</td><td>Authoritative product metadata and durable job state.</td><td>RDS PostgreSQL.</td></tr>
+          <tr><td>MinIO</td><td>Uploads, artifacts, generated files.</td><td>S3 with versioning.</td></tr>
+          <tr><td>Redis</td><td>Queue and shared rate-limit state.</td><td>Local Redis initially; ElastiCache when multiple compute instances need it.</td></tr>
+        </tbody></table></article></div>
+      </section>
+
+      <section id="safe-cleanup" data-searchable>
+        <p class="eyebrow">7 / Local files</p><h2>Know what is source code and what is disposable</h2>
+        <div class="grid"><article class="card wide"><h3>Usually safe to regenerate</h3><p><code>backend/.venv/</code>, <code>frontend/node_modules/</code>, <code>frontend/dist/</code>, <code>.pytest_cache/</code>, and Python <code>__pycache__/</code> folders are local dependencies or build/test output. They are intentionally ignored by Git.</p></article><article class="card"><h3>Do not remove casually</h3><p><code>data/app.db</code> and <code>data/uploads/</code> hold local product data. Removing them resets the local application and deletes local uploads.</p></article><article class="card full"><div class="callout"><strong>Rule of thumb:</strong> if a file is tracked by Git, treat it as project content. If it is ignored, decide whether it is disposable output or local data before deleting it.</div></article></div>
+      </section>
+
+      <section id="first-week" data-searchable>
+        <p class="eyebrow">A calm return path</p><h2>If you have not touched the repo for a while</h2>
+        <ol class="steps"><li>Read <code>README.md</code> and <code>docs/ARCHITECTURE.md</code>.</li><li>Run <code>git status</code> before changing anything; understand existing local changes first.</li><li>Run the frontend and follow one workflow: upload a file → inspect its profile → ask a question.</li><li>Open the matching frontend component, API route, workflow, and test for that feature.</li><li>Make one focused change and run the verification commands in this guide.</li></ol>
+      </section>
+      <footer>Created as a repository orientation guide. Update it when the architecture or major folder ownership changes.</footer>
+    </main>
+  </div>
+  <script>
+    const search = document.getElementById('guide-search');
+    const sections = [...document.querySelectorAll('[data-searchable]')];
+    search.addEventListener('input', () => {
+      const term = search.value.trim().toLowerCase();
+      sections.forEach((section) => section.classList.toggle('hidden-by-search', Boolean(term) && !section.innerText.toLowerCase().includes(term)));
+    });
+  </script>
+</body>
+</html>

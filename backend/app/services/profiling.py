@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from datetime import date, datetime
 from itertools import combinations
 from typing import Any
 
@@ -53,6 +54,8 @@ STOP_WORDS = {
 
 
 def json_safe(value: Any) -> Any:
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
     if isinstance(value, (np.integer,)):
         return int(value)
     if isinstance(value, (np.floating,)):
@@ -402,7 +405,12 @@ def profile_dataframe(
 
     correlations: list[dict[str, Any]] = []
     if len(numeric_columns) >= 2:
-        corr = df[numeric_columns].corr(numeric_only=True)
+        # Semantic overrides can promote a text-typed column (for example,
+        # Excel identifiers stored as "1.0") to numeric. Coerce the selected
+        # columns before correlation so the profile remains valid instead of
+        # indexing a column pandas excluded from ``numeric_only``.
+        numeric_frame = df[numeric_columns].apply(pd.to_numeric, errors="coerce")
+        corr = numeric_frame.corr()
         for idx, left in enumerate(numeric_columns):
             for right in numeric_columns[idx + 1 :]:
                 value = corr.loc[left, right]

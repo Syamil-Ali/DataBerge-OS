@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle, Bot, ChevronLeft, ChevronRight, Columns3,
+  AlertTriangle, Bot, ChevronDown, ChevronLeft, ChevronRight, Columns3,
   Database, FileCog, GitCompareArrows, Hash, LayoutGrid, Sigma, Type,
 } from 'lucide-react';
 import { BivariateAnalysis, RelationalSchema, RelationalTable } from '../types/domain';
@@ -241,6 +241,10 @@ function BivariateBlock({ b }: { b: BivariateAnalysis }) {
 export function SchemaProfileView({ schema, onAskInChat }: { schema: RelationalSchema; onAskInChat?: AskInChat }) {
   const [selTable, setSelTable] = useState(() => Object.keys(schema.schema.tables)[0] ?? '');
   const [page, setPage] = useState(1);
+  const [tablePickerOpen, setTablePickerOpen] = useState(false);
+  const [tableQuery, setTableQuery] = useState('');
+  const tablePickerRef = useRef<HTMLDivElement>(null);
+  const tableSearchRef = useRef<HTMLInputElement>(null);
   const tables = schema.schema.tables;
   const entries = Object.entries(tables);
   const totalCols = entries.reduce((s, [, t]) => s + (t.column_count ?? t.columns?.length ?? 0), 0);
@@ -259,6 +263,13 @@ export function SchemaProfileView({ schema, onAskInChat }: { schema: RelationalS
   const meta = curTable?.metadata;
   const bivar = curTable?.bivariate_analysis ?? null;
   const hasProf = cols.some((c) => c.histogram || c.top_values || c.stats);
+  const filteredEntries = entries
+    .filter(([name]) => name.toLocaleLowerCase().includes(tableQuery.trim().toLocaleLowerCase()))
+    .sort(([leftName], [rightName]) => {
+      if (leftName === selTable) return -1;
+      if (rightName === selTable) return 1;
+      return 0;
+    });
   useEffect(() => {
     const tableNames = Object.keys(schema.schema.tables ?? {});
     if (!tableNames.length) {
@@ -270,6 +281,28 @@ export function SchemaProfileView({ schema, onAskInChat }: { schema: RelationalS
     }
   }, [schema.id, schema.schema.tables, selTable]);
   useEffect(() => { setPage(1); }, [selTable]);
+  useEffect(() => {
+    if (!tablePickerOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!tablePickerRef.current?.contains(event.target as Node)) setTablePickerOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setTablePickerOpen(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    tableSearchRef.current?.focus();
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [tablePickerOpen]);
+
+  const selectTable = (name: string) => {
+    setSelTable(name);
+    setTablePickerOpen(false);
+    setTableQuery('');
+  };
   return (
     <section className="profile-view data-pulse-view">
       <div className="data-pulse-sticky-header">
@@ -299,13 +332,52 @@ export function SchemaProfileView({ schema, onAskInChat }: { schema: RelationalS
         <MetricCard label="Columns" value={totalCols} icon={Columns3} tone="emerald" />
         <MetricCard label="Descriptions" value={`${descCols}/${totalCols}`} icon={FileCog} tone="amber" />
       </div>)}
-      {entries.length > 1 && (
-        <div className="rel-editor-tabs" style={{marginBottom:16}}>
-          {entries.map(([name, t]) => (
-            <button key={name} className={selTable === name ? 'active' : ''} onClick={() => setSelTable(name)}>
-              <Database size={14} /> {name} <small style={{marginLeft:4,opacity:0.6}}>{(t.row_count ?? 0).toLocaleString()} rows</small>
-            </button>
-          ))}
+      {entries.length > 1 && curTable && (
+        <div className="table-picker" ref={tablePickerRef}>
+          <span className="table-picker-label">Viewing table</span>
+          <button
+            className="table-picker-trigger"
+            type="button"
+            aria-expanded={tablePickerOpen}
+            aria-haspopup="listbox"
+            aria-controls="data-pulse-table-options"
+            onClick={() => setTablePickerOpen((open) => !open)}
+          >
+            <Database size={16} aria-hidden="true" />
+            <span className="table-picker-current">
+              <strong>{selTable}</strong>
+              <small>{(curTable.row_count ?? 0).toLocaleString()} rows · {curTable.column_count ?? curTable.columns.length} columns</small>
+            </span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+          {tablePickerOpen && (
+            <div className="table-picker-menu" id="data-pulse-table-options" role="listbox" aria-label="Choose a table">
+              <input
+                ref={tableSearchRef}
+                className="table-picker-search"
+                type="search"
+                value={tableQuery}
+                onChange={(event) => setTableQuery(event.target.value)}
+                placeholder="Find a table"
+                aria-label="Find a table"
+              />
+              <div className="table-picker-options">
+                {filteredEntries.length ? filteredEntries.map(([name, table]) => (
+                  <button
+                    key={name}
+                    className={name === selTable ? 'selected' : ''}
+                    type="button"
+                    role="option"
+                    aria-selected={name === selTable}
+                    onClick={() => selectTable(name)}
+                  >
+                    <Database size={15} aria-hidden="true" />
+                    <span><strong>{name}</strong><small>{(table.row_count ?? 0).toLocaleString()} rows · {table.column_count ?? table.columns.length} columns</small></span>
+                  </button>
+                )) : <p className="table-picker-empty">No tables match “{tableQuery}”.</p>}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {curTable && (<>

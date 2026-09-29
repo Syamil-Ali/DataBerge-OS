@@ -23,6 +23,7 @@ from app.services.profiling import profile_dataframe
 _NUMERIC_TYPES = {"BIGINT", "INTEGER", "DOUBLE", "FLOAT", "SMALLINT", "TINYINT", "HUGEINT", "DECIMAL", "NUMERIC"}
 _DESCRIPTION_SHEET_NAMES = {"data dictionary", "description", "metadata", "dictionary", "schema"}
 _ID_COLUMN_NAMES = {"id", "key", "pk"}
+_GENERIC_RELATIONSHIP_COLUMN_NAMES = {"status", "type", "name", "date", "description"}
 _TABLE_COLUMN_CANDIDATES = {"sheet", "table", "table name", "worksheet", "entity", "dataset"}
 _FIELD_COLUMN_CANDIDATES = {"column", "columns", "field", "field name", "column name", "attribute"}
 _DESCRIPTION_COLUMN_CANDIDATES = {"description", "meaning", "definition", "comment", "desc", "business definition"}
@@ -113,12 +114,88 @@ def _is_unique(df: pd.DataFrame, column: str) -> bool:
     return bool(len(values) > 0 and values.nunique(dropna=True) == len(values))
 
 
-def _value_coverage(left: pd.Series, right: pd.Series) -> float:
-    left_values = set(left.dropna().astype(str))
-    if not left_values:
+def _uniqueness_ratio(series: pd.Series) -> float:
+    values = series.dropna()
+    if values.empty:
         return 0.0
-    right_values = set(right.dropna().astype(str))
-    return len(left_values.intersection(right_values)) / len(left_values)
+    return float(values.nunique(dropna=True) / len(values))
+
+
+def _normalise_key_value(value: Any) -> str | None:
+    """Normalise safe identifier representations without collapsing leading-zero IDs."""
+    if pd.isna(value):
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+
+    # Safely treat 1, "1", and "1.0" as the same key. Values such as "001"
+    # remain text because leading zeros commonly carry identifier meaning.
+    numeric_match = re.fullmatch(r"([+-]?)(0|[1-9]\d*)(?:\.0+)?", raw)
+    if numeric_match and not (len(numeric_match.group(2)) > 1 and numeric_match.group(2).startswith("0")):
+        return f"{numeric_match.group(1)}{int(numeric_match.group(2))}"
+    return raw
+
+
+def _normalised_key_values(series: pd.Series) -> list[str]:
+    return [key for value in series.tolist() if (key := _normalise_key_value(value)) is not None]
+
+
+def _looks_numeric_key(value: Any) -> bool:
+    key = _normalise_key_value(value)
+    return bool(key is not None and re.fullmatch(r"[+-]?\d+", key))
+
+
+def _key_types_compatible(left: pd.Series, right: pd.Series) -> bool:
+    left_numeric = pd.api.types.is_numeric_dtype(left)
+    right_numeric = pd.api.types.is_numeric_dtype(right)
+    left_datetime = pd.api.types.is_datetime64_any_dtype(left)
+    right_datetime = pd.api.types.is_datetime64_any_dtype(right)
+    if left_datetime or right_datetime:
+        return left_datetime and right_datetime
+    if left_numeric == right_numeric:
+        return True
+
+    text_side = right if left_numeric else left
+    values = text_side.dropna().tolist()
+    return bool(values) and all(_looks_numeric_key(value) for value in values)
+
+
+def _is_generic_relationship_name(name: str) -> bool:
+    normalised = _normalise_col_name(name)
+    return normalised in _GENERIC_RELATIONSHIP_COLUMN_NAMES or normalised.rsplit("_", 1)[-1] in _GENERIC_RELATIONSHIP_COLUMN_NAMES
+
+
+def _looks_like_relationship_key(name: str) -> bool:
+    """Keep automatic same-name joins focused on actual identifier fields."""
+    clean_name, key_type = _strip_key_suffix(name)
+    if key_type in {"PK", "FK"}:
+        return True
+    normalised = _normalise_col_name(clean_name)
+    return bool(re.search(r"(^|_)(id|key|code|sku|number|ref|reference)($|_)", normalised))
+
+
+def _relationship_evidence(child: pd.Series, parent: pd.Series) -> dict[str, Any]:
+    child_values = _normalised_key_values(child)
+    parent_values = _normalised_key_values(parent)
+    parent_set = set(parent_values)
+    matching_values = [value for value in child_values if value in parent_set]
+    orphan_values = [value for value in child_values if value not in parent_set]
+    samples = list(dict.fromkeys(matching_values))[:3]
+
+    return {
+        "parent_unique_ratio": round(_uniqueness_ratio(parent), 4),
+        "child_match_ratio": round(len(matching_values) / len(child_values), 4) if child_values else 0.0,
+        "orphan_count": len(orphan_values),
+        "null_count": int(child.isna().sum()),
+        "type_compatible": _key_types_compatible(child, parent),
+        "sample_matches": [[value, value] for value in samples],
+        "sample_orphans": list(dict.fromkeys(orphan_values))[:3],
+    }
+
+
+def _value_coverage(left: pd.Series, right: pd.Series) -> float:
+    return float(_relationship_evidence(left, right)["child_match_ratio"])
 
 
 def _cardinality(from_unique: bool, to_unique: bool) -> str:
@@ -139,6 +216,9 @@ def _relationship(
     confidence: float,
     method: str,
     cardinality: str,
+    *,
+    active: bool = False,
+    recommendation: str = "needs_review",
 ) -> dict[str, Any]:
     return {
         "id": _relationship_id(from_table, from_column, to_table, to_column),
@@ -149,7 +229,8 @@ def _relationship(
         "confidence": round(float(confidence), 2),
         "method": method,
         "cardinality": cardinality,
-        "active": True,
+        "active": active,
+        "recommendation": recommendation,
     }
 
 
@@ -221,6 +302,10 @@ def infer_relationships(tables: dict[str, pd.DataFrame]) -> list[dict[str, Any]]
                 c2_unique = column_uniqueness[(t2, c2)]
                 c1_key = column_key_types[(t1, c1)]
                 c2_key = column_key_types[(t2, c2)]
+                if not {c1_key, c2_key}.intersection({"PK", "FK"}) and not _looks_like_relationship_key(_norm_name):
+                    continue
+                if _is_generic_relationship_name(_norm_name) and not {c1_key, c2_key}.intersection({"PK", "FK"}):
+                    continue
                 if c1_key == "FK" and c2_key == "PK":
                     from_table, from_col, to_table, to_col = t1, c1, t2, c2
                 elif c2_key == "FK" and c1_key == "PK":
@@ -287,22 +372,43 @@ def infer_relationships(tables: dict[str, pd.DataFrame]) -> list[dict[str, Any]]
                         ),
                     )
 
-    # Refine every candidate with actual value coverage.
+    # Refine every candidate with value-level evidence. Relationships are
+    # suggestions only: they remain disabled until a user enables them.
+    accepted_relationships: list[dict[str, Any]] = []
     for rel in relationships:
         left = tables[rel["from_table"]][rel["from_column"]]
         right = tables[rel["to_table"]][rel["to_column"]]
-        coverage = _value_coverage(left, right)
-        rel["coverage"] = round(coverage, 2)
-        if coverage >= 0.9:
-            rel["confidence"] = max(rel["confidence"], 0.9 if rel["method"].startswith("explicit") else 0.85)
-            if not rel["method"].startswith("explicit"):
-                rel["method"] = "value_coverage"
-        elif coverage < 0.5 and rel["confidence"] < 0.9:
-            rel["confidence"] = min(rel["confidence"], 0.35)
+        evidence = _relationship_evidence(left, right)
+        coverage = float(evidence["child_match_ratio"])
+        parent_is_reliably_unique = float(evidence["parent_unique_ratio"]) >= 0.995
+        is_explicit = rel["method"].startswith("explicit")
 
-    relationships = [rel for rel in relationships if rel["confidence"] >= 0.5]
-    relationships.sort(key=lambda r: r["confidence"], reverse=True)
-    return relationships
+        rel["coverage"] = round(coverage, 2)
+        rel["evidence"] = evidence
+        rel["active"] = False
+
+        if is_explicit:
+            if evidence["type_compatible"] and parent_is_reliably_unique and coverage >= 0.9:
+                rel["recommendation"] = "recommended"
+                rel["confidence"] = 0.95
+            else:
+                # Preserve a labelled PK/FK candidate so the user can see the
+                # mismatch rather than silently trusting or discarding it.
+                rel["recommendation"] = "needs_review"
+                rel["confidence"] = min(float(rel["confidence"]), 0.45)
+            accepted_relationships.append(rel)
+            continue
+
+        # Name and table-pattern matches need strong structural and value
+        # evidence before entering the review model.
+        if not evidence["type_compatible"] or not parent_is_reliably_unique or coverage < 0.7:
+            continue
+        rel["recommendation"] = "recommended" if coverage >= 0.9 else "needs_review"
+        rel["confidence"] = 0.85 if coverage >= 0.9 else 0.65
+        accepted_relationships.append(rel)
+
+    accepted_relationships.sort(key=lambda r: r["confidence"], reverse=True)
+    return accepted_relationships
 
 
 def load_tables_from_excel(file_path: str | Path) -> dict[str, pd.DataFrame]:

@@ -736,6 +736,153 @@ button {
   overscroll-behavior: contain;
 }
 
+.table-picker {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.table-picker-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table-picker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-width: min(100%, 310px);
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+  text-align: left;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.table-picker-trigger:hover,
+.table-picker-trigger[aria-expanded="true"] {
+  border-color: #08b5cf;
+  background: #f8fdfe;
+}
+
+.table-picker-trigger:focus-visible,
+.table-picker-search:focus-visible,
+.table-picker-options button:focus-visible {
+  outline: 2px solid #08b5cf;
+  outline-offset: 2px;
+}
+
+.table-picker-current {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.table-picker-current strong,
+.table-picker-options strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-picker-current small,
+.table-picker-options small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.table-picker-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 104px;
+  width: min(360px, calc(100vw - 48px));
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(23, 32, 51, 0.14);
+}
+
+.table-picker-search {
+  width: calc(100% - 16px);
+  height: 36px;
+  margin: 8px;
+  padding: 0 10px;
+  border: 1px solid #d8e1e8;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #172033;
+  font: inherit;
+  font-size: 13px;
+}
+
+.table-picker-options {
+  max-height: 304px;
+  overflow-y: auto;
+  padding: 0 5px 5px;
+}
+
+.table-picker-options button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #172033;
+  font: inherit;
+  text-align: left;
+}
+
+.table-picker-options button:hover,
+.table-picker-options button.selected {
+  background: #e8f8fb;
+}
+
+.table-picker-options button > span {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.table-picker-empty {
+  margin: 0;
+  padding: 14px 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .table-picker {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .table-picker-trigger {
+    width: 100%;
+  }
+
+  .table-picker-menu {
+    left: 0;
+    width: min(360px, calc(100vw - 24px));
+  }
+}
+
 .section-title p {
   margin: 0 0 6px;
   text-transform: uppercase;
