@@ -70,6 +70,21 @@ class QuerySkill:
         if non_analytics_response:
             return non_analytics_response
         contextual_message = self._contextualize_follow_up(message, history or [])
+        # A relational model has two scopes. Let the planner interpret the
+        # request before single-dataset keyword shortcuts can conflate them.
+        if dataset.get("profile", {}).get("relational_schema"):
+            response = self._answer_with_analyst_plan(
+                contextual_message, dataset, history or [],
+                data_engineer=data_engineer if allow_handoff else None,
+            )
+            if response:
+                return response
+            return self._profile_response(
+                dataset,
+                "I could not interpret this request against the workbook and its working dataset. Please retry.",
+                ["The relational analysis planner did not return a usable response."],
+                confidence=0.0,
+            )
         shape_response = self._answer_dataset_shape_question(contextual_message, dataset)
         if shape_response:
             return shape_response
@@ -100,7 +115,8 @@ class QuerySkill:
     def can_answer_without_model(self, message: str, dataset: dict[str, Any]) -> bool:
         return bool(
             self._non_analytics_response(message)
-            or self._is_dataset_shape_question(message)
+            or (not dataset.get("profile", {}).get("relational_schema")
+                and self._is_dataset_shape_question(message))
         )
 
     def _answer_dataset_shape_question(
@@ -108,6 +124,8 @@ class QuerySkill:
         message: str,
         dataset: dict[str, Any],
     ) -> dict[str, Any] | None:
+        if dataset.get("profile", {}).get("relational_schema"):
+            return None
         normalized = normalize(message)
         if not self._is_dataset_shape_question(normalized):
             return None
@@ -539,6 +557,16 @@ class QuerySkill:
         }
         template, prompt_metadata = self._load_analysis_planning_template()
         rendered_prompt = self._format_prompt_template(template, variables)
+        if dataset.get("profile", {}).get("relational_schema"):
+            rendered_prompt += (
+                "\nScope contract: Interpret the user's latest request, not keywords in prefilled context "
+                "or a previous assistant answer. Workbook/model inventory is relational_schema; "
+                "use its table_count, table_names, and per-table column_count for metadata questions "
+                "in profile mode. Do not substitute working-dataset field counts for table counts. "
+                "Working-dataset row and column counts describe only the materialized SQL source. "
+                "Source lineage joined_tables identifies its included tables; other source tables "
+                "must not be assumed queryable. Missing scope evidence is unknown, not zero.\n"
+            )
         return {
             "name": prompt_metadata["name"],
             "version": prompt_metadata["version"],
@@ -703,6 +731,11 @@ class QuerySkill:
         if isinstance(relational_schema, dict) and relational_schema:
             context["format"] = "relational_working_table"
             context["relational_schema"] = relational_schema
+            context["working_dataset"] = {
+                "row_count": profile.get("row_count"),
+                "column_count": profile.get("column_count"),
+                "joined_tables": (profile.get("source", {}).get("lineage", {}) or {}).get("joined_tables"),
+            }
             context["relational_entity_keys"] = self._relational_entity_keys(relational_schema, [col.get("name") for col in columns])
             context["sql_table_policy"] = (
                 "Query only the DuckDB table named dataset. Multi-table columns are present in the working table "
