@@ -62,12 +62,12 @@ jobs:
     env:
       APP_ENV: test
       DATA_DIR: /tmp/data-berge-ci/distributed-data
-      DATABASE_URL: postgresql://data_berge:data_berge_dev@localhost:15432/data_berge
-      REDIS_URL: redis://localhost:6380/0
+      DATABASE_URL: postgresql://data_berge:data_berge_dev@127.0.0.1:15432/data_berge
+      REDIS_URL: redis://127.0.0.1:6380/0
       QUEUE_MODE: redis
       OBJECT_STORAGE_BACKEND: s3
       S3_BUCKET: data-berge
-      S3_ENDPOINT_URL: http://localhost:9000
+      S3_ENDPOINT_URL: http://127.0.0.1:9000
       S3_REGION: us-east-1
       S3_ACCESS_KEY_ID: data_berge
       S3_SECRET_ACCESS_KEY: data_berge_dev_secret
@@ -84,7 +84,22 @@ jobs:
         working-directory: backend
         run: pip install --require-hashes -r requirements.lock.txt
       - name: Start distributed dependencies
-        run: docker compose up -d postgres redis minio minio-init
+        run: docker compose -f docker-compose.ci.yml up -d --wait --wait-timeout 120
+      - name: Create disposable S3 test bucket
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import os
+          import boto3
+          client = boto3.client(
+              "s3", endpoint_url=os.environ["S3_ENDPOINT_URL"],
+              region_name=os.environ["S3_REGION"],
+              aws_access_key_id=os.environ["S3_ACCESS_KEY_ID"],
+              aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
+          )
+          client.create_bucket(Bucket=os.environ["S3_BUCKET"])
+          client.head_bucket(Bucket=os.environ["S3_BUCKET"])
+          PY
       - name: Apply PostgreSQL migrations
         working-directory: backend
         run: python -m scripts.migrate
@@ -93,10 +108,10 @@ jobs:
         run: python -m unittest tests.test_distributed_integration -v
       - name: Show dependency logs on failure
         if: failure()
-        run: docker compose logs postgres redis minio minio-init
+        run: docker compose -f docker-compose.ci.yml logs postgres redis s3
       - name: Stop distributed dependencies
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.ci.yml down -v
 
   containers:
     runs-on: ubuntu-latest
