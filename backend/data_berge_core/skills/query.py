@@ -88,7 +88,7 @@ class QuerySkill:
             return self._profile_response(
                 dataset,
                 "The analysis service is currently unavailable or did not return a usable response. "
-                "Your workbook metadata is still available; you can ask how many tables it contains. "
+                "No calculation was run and your workbook has not been changed. "
                 "If this persists, ask an administrator to check the agent initialization and planner logs.",
                 ["The relational analysis planner did not return a usable response."],
                 confidence=0.0,
@@ -125,9 +125,13 @@ class QuerySkill:
         schema = profile.get("relational_schema") or {}
         question = normalize(message)
         # Match complete inventory questions, never filtered counts or multi-part analyses.
+        scope = r"(?:the |this |my )?(?:dataset|db|database|workbook|model)"
         count_question = re.fullmatch(
-            r"(?:how many (?:tables?|sheets?)(?: are there)?|(?:number of|count of) (?:tables?|sheets?))"
-            r"(?: in (?:the |this |my )?(?:dataset|db|database|workbook|model))?", question,
+            r"(?:how many (?:tables?|sheets?)(?: are there| does it have| has| have)?"
+            rf"(?:(?: in| inside| within) {scope})?"
+            rf"|how many (?:tables?|sheets?) (?:does|do) {scope} (?:have|contain|include)"
+            rf"|(?:number of|count of|total number of) (?:tables?|sheets?)(?: in {scope})?)",
+            question,
         )
         overview_question = question in {
             "what is the dataset about", "what is the dataset is about",

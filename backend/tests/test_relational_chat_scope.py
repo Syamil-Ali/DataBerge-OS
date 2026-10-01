@@ -16,7 +16,13 @@ class RelationalChatScopeTests(unittest.TestCase):
         }
         skill = QuerySkill.__new__(QuerySkill)
         skill.planner_agent = object()
-        for question in ("how many tables in the dataset", "how many tables in the db?"):
+        for question in (
+            "how many tables in the dataset", "how many tables in the db?",
+            "how many tables has inside the dataset?",
+            "how many tables does this dataset have?",
+            "how many sheets are there within my workbook?",
+            "total number of tables in the model",
+        ):
             with self.subTest(question=question):
                 response = skill.answer(question, dataset)
                 self.assertEqual(response["answer"], "The workbook contains 101 tables.")
@@ -25,11 +31,16 @@ class RelationalChatScopeTests(unittest.TestCase):
         self.assertIn("101 tables", overview["answer"])
         self.assertIn("4 rows and 10 columns", overview["answer"])
         self.assertIn("Table 001", overview["answer"])
-        for question in ("how many tables contain missing values?", "why?", "how many rows in Table 002?"):
+        for question in (
+            "how many tables contain missing values?", "why?", "how many rows in Table 002?",
+            "how many tables in the dataset have more than 10 rows?",
+            "how many tables has inside the dataset and what is total revenue?",
+        ):
             with self.subTest(question=question):
                 response = skill.answer(question, dataset)
                 self.assertEqual(response["confidence"], 0.0)
                 self.assertIn("analysis service", response["answer"])
+                self.assertNotIn("you can ask", response["answer"])
 
     def test_relational_questions_reach_agent_before_field_shortcut(self):
         for count in (7, 101):

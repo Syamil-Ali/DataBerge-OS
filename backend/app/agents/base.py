@@ -127,7 +127,7 @@ def build_model_config(model_options: dict[str, Any] | None = None) -> Any:
     model_options = model_options or {}
     if AGNO_BASE_URL:
         if CompatibleOpenAILike is None:
-            return AGNO_MODEL
+            raise ImportError("OpenAI-compatible adapter unavailable; install the locked backend dependencies")
         return CompatibleOpenAILike(
             id=_model_id_from_config(),
             api_key=AGNO_API_KEY or "not-provided",

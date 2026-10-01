@@ -132,6 +132,7 @@ The SQLite scripts.db_admin command remains for local-development databases only
 
 ## Incident notes
 
+- Google/Gemini through `AGNO_BASE_URL` uses Agno's OpenAI-compatible adapter and requires the `openai` SDK, now explicitly pinned in both backend requirements files. Older images omitted that SDK and fell back to parsing the bare Gemini model ID, producing `ValueError` for every agent. Rebuild and redeploy the backend and worker from the updated dependency lock; changing the model name or restarting an old image does not install the missing dependency. The initialization regression test uses the real adapter without a provider request.
 - `ManagerAgentUnavailable` means agent initialization did not produce a runnable agent, not that the provider rejected a prompt. Check startup logs for `Agno agent import failed`, `Agno compatible model import failed`, or `Agent ... initialization failed`. These diagnostics include exception types but omit exception text and validation inputs to avoid exposing credentials. Check installed dependencies and model/provider configuration in the affected runtime, then restart it after correcting the cause.
 - Workbook chat retains a metadata-only fallback for simple table counts and structural overviews when the analyst planner fails. Other requests report analysis-service unavailability; this fallback does not restore model reasoning or SQL planning. Check `Analyst planner` log entries for initialization or execution failures.
 - API restarts do not lose queued RQ jobs.
