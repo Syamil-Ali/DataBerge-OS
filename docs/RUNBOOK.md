@@ -132,6 +132,8 @@ The SQLite scripts.db_admin command remains for local-development databases only
 
 ## Incident notes
 
+- `ManagerAgentUnavailable` means agent initialization did not produce a runnable agent, not that the provider rejected a prompt. Check startup logs for `Agno agent import failed`, `Agno compatible model import failed`, or `Agent ... initialization failed`. These diagnostics include exception types but omit exception text and validation inputs to avoid exposing credentials. Check installed dependencies and model/provider configuration in the affected runtime, then restart it after correcting the cause.
+- Workbook chat retains a metadata-only fallback for simple table counts and structural overviews when the analyst planner fails. Other requests report analysis-service unavailability; this fallback does not restore model reasoning or SQL planning. Check `Analyst planner` log entries for initialization or execution failures.
 - API restarts do not lose queued RQ jobs.
 - Worker failures are retried and reflected in durable background-job/artifact status.
 - Queue saturation returns HTTP 503 instead of accepting unbounded work.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any
 
 from app.settings import (
@@ -13,14 +14,18 @@ from app.settings import (
 from app.services.llm_usage import record_run_usage
 from app.services.llm_observability import set_span_attributes, set_span_outputs, trace_span
 
+logger = logging.getLogger(__name__)
+
 try:
     from agno.agent import Agent
-except Exception:  # pragma: no cover - lets the app run before dependencies are installed
+except Exception as exc:  # pragma: no cover - lets the app run before dependencies are installed
+    logger.error("Agno agent import failed (%s)", type(exc).__name__)
     Agent = None  # type: ignore[assignment]
 
 try:
     from agno.models.openai.like import OpenAILike
-except Exception:  # pragma: no cover
+except Exception as exc:  # pragma: no cover
+    logger.error("Agno compatible model import failed (%s)", type(exc).__name__)
     OpenAILike = None  # type: ignore[assignment]
 
 
@@ -142,6 +147,7 @@ def make_agno_agent(
 ):
     """Create an Agno agent while retaining a dependency-free fallback."""
     if Agent is None:
+        logger.error("Agent %s unavailable: Agno dependency import failed", spec.name)
         return spec
     try:
         return ObservableAgent(
@@ -153,5 +159,7 @@ def make_agno_agent(
             markdown=True,
             **agent_options,
         )
-    except Exception:
+    except Exception as exc:
+        # Exception messages and validation inputs may contain credentials.
+        logger.error("Agent %s initialization failed (%s)", spec.name, type(exc).__name__)
         return spec

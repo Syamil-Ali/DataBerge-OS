@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Any
 
 from data_berge_core.contracts import ArtifactStore, ProfileProvider, QueryRunner, get_flat_profile, normalize_top_values
 from data_berge_core.runtime import AgentFactory, AgentSpec, ToolkitFactory
 from data_berge_core.skills.aggregation import AggregationGrainSkill
+
+logger = logging.getLogger(__name__)
 
 try:
     import mlflow
@@ -79,9 +82,14 @@ class QuerySkill:
             )
             if response:
                 return response
+            metadata_response = self._workbook_metadata_fallback(message, dataset)
+            if metadata_response:
+                return metadata_response
             return self._profile_response(
                 dataset,
-                "I could not interpret this request against the workbook and its working dataset. Please retry.",
+                "The analysis service is currently unavailable or did not return a usable response. "
+                "Your workbook metadata is still available; you can ask how many tables it contains. "
+                "If this persists, ask an administrator to check the agent initialization and planner logs.",
                 ["The relational analysis planner did not return a usable response."],
                 confidence=0.0,
             )
@@ -111,6 +119,41 @@ class QuerySkill:
         if model_sql_response:
             return model_sql_response
         return self.tools.answer_dataset_question(dataset["project_id"], dataset["id"], contextual_message)
+
+    def _workbook_metadata_fallback(self, message: str, dataset: dict[str, Any]) -> dict[str, Any] | None:
+        profile = dataset.get("profile", {}) or {}
+        schema = profile.get("relational_schema") or {}
+        question = normalize(message)
+        # Match complete inventory questions, never filtered counts or multi-part analyses.
+        count_question = re.fullmatch(
+            r"(?:how many (?:tables?|sheets?)(?: are there)?|(?:number of|count of) (?:tables?|sheets?))"
+            r"(?: in (?:the |this |my )?(?:dataset|db|database|workbook|model))?", question,
+        )
+        overview_question = question in {
+            "what is the dataset about", "what is the dataset is about",
+            "what is this dataset about", "summarize this model", "summarize this workbook",
+        }
+        if not schema or not (count_question or overview_question):
+            return None
+        count = schema.get("table_count")
+        if count is None:
+            return None
+        answer = f"The workbook contains {count} tables."
+        if overview_question:
+            flat = get_flat_profile(profile)
+            answer += (
+                f" The current working dataset has {flat.get('row_count', dataset.get('row_count', 0))} rows"
+                f" and {flat.get('column_count', dataset.get('column_count', 0))} columns."
+            )
+            joined = (flat.get("source", {}).get("lineage", {}) or {}).get("joined_tables", [])
+            if joined:
+                answer += f" It includes: {self._human_join(joined)}."
+            answer += " This is a structural summary only; the analysis service could not interpret the dataset's business purpose."
+        return self._profile_response(
+            dataset, answer,
+            ["Answered from stored workbook metadata because the analyst planner was unavailable or returned no usable response."],
+            confidence=0.99,
+        )
 
     def can_answer_without_model(self, message: str, dataset: dict[str, Any]) -> bool:
         return bool(
@@ -396,6 +439,7 @@ class QuerySkill:
         data_engineer: Any | None = None,
     ) -> dict[str, Any] | None:
         if not hasattr(self.planner_agent, "run"):
+            logger.error("Analyst planner unavailable: agent initialization did not produce a runnable agent")
             return None
 
         prompt_info = self._analysis_planning_prompt_info(message, dataset, history)
@@ -536,8 +580,10 @@ class QuerySkill:
                     "mode": "sql",
                     "_prompt_info": prompt_info,
                 }
-        except Exception:
+        except Exception as exc:
+            logger.warning("Analyst planner execution failed (%s)", type(exc).__name__)
             return None
+        logger.warning("Analyst planner returned an unsupported response mode")
         return None
 
     def _analysis_planning_prompt_info(
